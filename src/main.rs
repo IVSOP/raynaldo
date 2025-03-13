@@ -1,29 +1,21 @@
-use image::{
-	DynamicImage,
-	ImageBuffer,
-	Rgb,
-};
+use anyhow::Context;
+use image::buffer::ConvertBuffer;
+use image::{Rgb32FImage, RgbImage};
 
-fn main() {
-	const W: u32 = 640;
-    const H: u32 = 640;
-    let mut image = DynamicImage::new_rgb32f(W, H);
+const W: u32 = 640;
+const H: u32 = 640;
 
-	let rgb32f_buffer: &mut ImageBuffer<Rgb<f32>, Vec<f32>> = 
-	match image {
-        DynamicImage::ImageRgb32F(ref mut buf) => buf,
-        _ => unreachable!("Rgb32 image was just created"),
-    };
+fn main() -> anyhow::Result<()> {
+    let mut image = Rgb32FImage::new(W, H);
 
-	for pixel in rgb32f_buffer.pixels_mut() {
-		pixel[0] = 1.0;
-		pixel[1] = 0.0;
-		pixel[2] = 0.0;
-	}
+    for pixel in image.pixels_mut() {
+        pixel[0] = 1.0;
+        pixel[1] = 0.0;
+        pixel[2] = 0.0;
+    }
 
+    let image: RgbImage = image.convert();
+    image.save("MyImage.png").context("Error saving image")?;
 
-	match image.into_rgb8().save("MyImage.png") {
-		Err(e) => println!("Error saving image: {}", e),
-		_ => println!("Image saved"),
-	}
+    Ok(())
 }
