@@ -1,0 +1,8 @@
+[package]
+name = "raynaldo"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+embree = "0.3.8"
+image = "0.25.5"
