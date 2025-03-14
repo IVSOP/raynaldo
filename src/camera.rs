@@ -151,7 +151,7 @@ impl Camera {
                 // // println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
                 let hit_pos = origin + dir * hit.ray.tfar;
 
-                color += self.direct_lighting(hit_pos, normal, dir, &material, lights, scene);
+                color += self.direct_lighting(hit_pos, normal, &material, lights, scene);
 
                 // TODO: I just ported over the depth checks. aren't they inneficient??????
                 if depth < DEPTH {
@@ -203,7 +203,7 @@ impl Camera {
         }
     }
 
-    pub fn handle_point_light<'a>(&self, material: &Material, light: &Light, hit_pos: Vec3, normal: Vec3, dir: Vec3, light_pos: Vec3, scene: &CommittedScene<'a>) -> LinearRgba {
+    pub fn handle_point_light<'a>(&self, material: &Material, light: &Light, hit_pos: Vec3, normal: Vec3, light_pos: Vec3, scene: &CommittedScene<'a>) -> LinearRgba {
         if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0 {
             // compiler please take care of this
             let distance_to_light = (light_pos - hit_pos).length();
@@ -235,9 +235,9 @@ impl Camera {
                 // we have a direct path to the light, can add direct illumination
                 if let Some(_) = scene.intersect_1(shadow_ray).unwrap() {
                     let color = LinearRgba::rgb(
-                        light.color.red * material.color.red,
-                        light.color.green * material.color.green,
-                        light.color.blue * material.color.blue,
+                        light.color.red * material.diffuse.red,
+                        light.color.green * material.diffuse.green,
+                        light.color.blue * material.diffuse.blue,
                     ) * light_cos;
 
                     // println!("{:?}", color);
@@ -250,7 +250,7 @@ impl Camera {
     }
 
     // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
-    pub fn direct_lighting<'a>(&self, hit_pos: Vec3, normal: Vec3, dir: Vec3, material: &Material, lights: &LightStorage, scene: &CommittedScene<'a>) -> LinearRgba {
+    pub fn direct_lighting<'a>(&self, hit_pos: Vec3, normal: Vec3, material: &Material, lights: &LightStorage, scene: &CommittedScene<'a>) -> LinearRgba {
         let mut color = LinearRgba::BLACK;
 
         // loop over all light sources
@@ -260,7 +260,7 @@ impl Camera {
                     self.handle_ambient_light(material, light)
                 },
                 LightType::POINT(light_pos) => {
-                    self.handle_point_light(material, light, hit_pos, normal, dir, light_pos, scene)
+                    self.handle_point_light(material, light, hit_pos, normal, light_pos, scene)
                 },
             }
         }
