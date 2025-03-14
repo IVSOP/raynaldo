@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.97"
+bevy_color = "0.15.4"
 embree4-rs = { git = "https://github.com/ivsop/embree4-rs/", rev = "18c1084caac9de959e76280716ed1dd71e9824eb" }
 embree4-sys = "0.0.12"
 fastrand = "2.3.0"

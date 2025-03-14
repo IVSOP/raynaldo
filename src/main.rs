@@ -9,6 +9,11 @@ use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 mod common;
 use common::*;
 
+mod camera;
+use camera::*;
+
+mod ray;
+
 mod mesh;
 
 const W: u32 = 640;
