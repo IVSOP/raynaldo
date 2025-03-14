@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use bevy_color::LinearRgba;
+use bevy_color::{Gray, LinearRgba};
 use glam::*;
 use crate::common::*;
 use embree4_rs::{geometry::TriangleMeshGeometry, Device, Scene};
@@ -15,12 +15,15 @@ pub struct Mesh {
 #[derive(Debug, Clone)]
 pub struct Material {
     pub color: LinearRgba,
+    pub emissive: LinearRgba,
+    pub is_light: bool,
 }
 
 impl Material {
     pub fn color(color: LinearRgba) -> Self {
         Self {
             color,
+            ..default()
         }
     }
 }
@@ -29,6 +32,8 @@ impl Default for Material {
     fn default() -> Self {
         Self {
             color: LinearRgba::RED,
+            emissive: LinearRgba::BLACK,
+            is_light: false,
         }
     }
 }
@@ -92,5 +97,27 @@ impl MeshStorage {
 
     pub fn get(&self, id: u32) -> Option<&Mesh> {
         return self.meshes.get(&id)
+    }
+}
+
+pub struct Light {
+    pub light_type: LightType,
+}
+
+pub enum LightType {
+    AMBIENT,
+    POINT,
+    // AREA,
+}
+
+pub struct LightStorage {
+    pub lights: Vec<Light>,
+}
+
+impl Default for LightStorage {
+    fn default() -> Self {
+        Self {
+            lights: Vec::new(),
+        }
     }
 }

@@ -124,41 +124,56 @@ impl Camera {
     // }
 
     // returns (total rays casted, hits)
-    fn trace<'a>(&self, ray: RTCRay, scene: &CommittedScene<'a>, storage: &MeshStorage, depth: u32) -> LinearRgba {
+    fn trace<'a>(&self, ray: RTCRay, scene: &CommittedScene<'a>, meshes: &MeshStorage, lights: &LightStorage, depth: u32) -> LinearRgba {
+
+        if depth > 3 {
+            return self.background
+        }
 
         match scene.intersect_1(ray).unwrap() {
             Some(hit) => {
+                let color = LinearRgba::BLACK;
+                let mesh: &Mesh = meshes.get(hit.hit.geomID).unwrap();
+                let material = &mesh.material;
+
+
+                // if material.is_light {
+                //     return material.emissive
+                // }
+
                 let origin = Vec3::new(hit.ray.org_x, hit.ray.org_y, hit.ray.org_z);
                 let dir = Vec3::new(hit.ray.dir_x, hit.ray.dir_y, hit.ray.dir_z);
-                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! A NORMAL NAO VEM NECESSARIAMENTE NORMALIZADA
-                let normal = Vec3::new(hit.hit.Ng_x, hit.hit.Ng_y, hit.hit.Ng_z);
-                let mesh: &Mesh = storage.get(hit.hit.geomID).unwrap();
-                // println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
-                
-                mesh.material.color
+                // // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! A NORMAL NAO VEM NECESSARIAMENTE NORMALIZADA
+                // let normal = Vec3::new(hit.hit.Ng_x, hit.hit.Ng_y, hit.hit.Ng_z);
+                // // println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
+                let hit_pos = origin + dir * hit.ray.tfar;
+
+                // color += self.direct_lighting(hit_pos, material, lights);
+
+                material.color
             },
             None => self.background
         }
     }
 
-    pub fn render_pixel<'a>(&self, x: u32, y: u32, scene: &CommittedScene<'a>, storage: &MeshStorage, spp: u32) -> LinearRgba {
+    pub fn render_pixel<'a>(&self, x: u32, y: u32, scene: &CommittedScene<'a>, meshes: &MeshStorage, lights: &LightStorage, spp: u32) -> LinearRgba {
         let mut base_color = LinearRgba::BLACK;
         let sppf = 1.0 / spp as f32;
 
         for _ in 0..spp {
             let ray = self.generate_ray(x, y, Some((fastrand::f32(), fastrand::f32())));
 
-            base_color += self.trace(ray, scene, storage, 0) * sppf;
+            base_color += self.trace(ray, scene, meshes, lights, 0) * sppf;
         }
 
         base_color
     }
 
-    pub fn render<'a>(&self, image: &mut Rgb32FImage, scene: &CommittedScene<'a>, storage: &MeshStorage, spp: u32) {
+    pub fn render<'a>(&self, image: &mut Rgb32FImage, scene: &CommittedScene<'a>, meshes: &MeshStorage, lights: &LightStorage, spp: u32) {
         // TODO: paralelize this. image access causes problems
         for y in 0..self.h {
             for x in 0..self.w {
-                let color = self.render_pixel(x, y, scene, storage, spp);
+                let color = self.render_pixel(x, y, scene, meshes, lights, spp);
                 *image.get_pixel_mut(x, y) = Rgb::<f32>([color.red, color.green, color.blue]);
             }
         }
