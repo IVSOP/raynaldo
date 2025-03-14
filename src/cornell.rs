@@ -64,7 +64,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     ceiling.verts.push((0.0, 548.8, 559.2));
     ceiling.verts.push((556.0, 548.8, 559.2));
     ceiling.indices.push((0, 1, 2));
-    ceiling.indices.push((3, 0, 2));
+    ceiling.indices.push((0, 2, 3));
     
     let mut floor = Mesh::with_material(white_material.clone());
     floor.verts.push((552.8, 0.0, 0.0));
@@ -72,7 +72,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     floor.verts.push((0.0, 0.0, 559.2));
     floor.verts.push((549.6, 0.0, 559.2));
     floor.indices.push((0, 1, 2));
-    floor.indices.push((3, 0, 2));
+    floor.indices.push((0, 2, 3));
     
     let mut back = Mesh::with_material(white_material.clone());
     back.verts.push((0.0, 0.0, 559.2));
@@ -80,7 +80,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     back.verts.push((556.0, 548.8, 559.2));
     back.verts.push((0.0, 548.8, 559.2));
     back.indices.push((0, 1, 2));
-    back.indices.push((0, 3, 2));
+    back.indices.push((0, 2, 3));
     
     let mut left = Mesh::with_material(green_material.clone());
     left.verts.push((0.0, 0.0, 0.0));
@@ -88,7 +88,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     left.verts.push((0., 548.8, 559.2));
     left.verts.push((0., 548.8, 0.));
     left.indices.push((0, 1, 2));
-    left.indices.push((0, 3, 2));
+    left.indices.push((0, 2, 3));
     
     let mut right = Mesh::with_material(red_material.clone());
     right.verts.push((552.8, 0.0, 0.));
@@ -96,7 +96,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     right.verts.push((549.6, 548.8, 559.2));
     right.verts.push((552.8, 548.8, 0.));
     right.indices.push((0, 1, 2));
-    right.indices.push((0, 3, 2));
+    right.indices.push((0, 2, 3));
     
     let mut short_block_top = Mesh::with_material(orange_material.clone());
     short_block_top.verts.push((130.0, 165.0,  65.0));
@@ -104,7 +104,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     short_block_top.verts.push((240.0, 165.0, 272.0));
     short_block_top.verts.push((290.0, 165.0, 114.0));
     short_block_top.indices.push((0, 1, 2));
-    short_block_top.indices.push((0, 3, 2));
+    short_block_top.indices.push((0, 2, 3));
     
     let mut short_block_bot = Mesh::with_material(orange_material.clone());
     short_block_bot.verts.push((130.0, 0.01,  65.0));
@@ -112,7 +112,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     short_block_bot.verts.push((240.0, 0.01, 272.0));
     short_block_bot.verts.push((290.0, 0.01, 114.0));
     short_block_bot.indices.push((0, 1, 2));
-    short_block_bot.indices.push((0, 3, 2));
+    short_block_bot.indices.push((0, 2, 3));
     
     let mut short_block_left = Mesh::with_material(orange_material.clone());
     short_block_left.verts.push((290.0, 0.0, 114.0));
@@ -120,7 +120,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     short_block_left.verts.push((240.0, 165.0, 272.0));
     short_block_left.verts.push((240.0,  0.0, 272.0));
     short_block_left.indices.push((0, 1, 2));
-    short_block_left.indices.push((0, 3, 2));
+    short_block_left.indices.push((0, 2, 3));
     
     let mut short_block_back = Mesh::with_material(orange_material.clone());
     short_block_back.verts.push((240.0, 0.0, 272.0));
@@ -128,7 +128,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     short_block_back.verts.push((82.0, 165., 225.0));
     short_block_back.verts.push((82.0, 0.0, 225.0));
     short_block_back.indices.push((0, 1, 2));
-    short_block_back.indices.push((0, 3, 2));
+    short_block_back.indices.push((0, 2, 3));
     
     let mut short_block_right = Mesh::with_material(orange_material.clone());
     short_block_right.verts.push((82.0, 0.0, 225.0));
@@ -136,7 +136,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     short_block_right.verts.push((130.0, 165.0, 65.0));
     short_block_right.verts.push((130.0, 0.0, 65.0));
     short_block_right.indices.push((0, 1, 2));
-    short_block_right.indices.push((0, 3, 2));
+    short_block_right.indices.push((0, 2, 3));
     
     let mut short_block_front = Mesh::with_material(orange_material.clone());
     short_block_front.verts.push((130.0, 0.0, 65.0));
@@ -144,7 +144,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     short_block_front.verts.push((290.0, 165.0, 114.0));
     short_block_front.verts.push((290.0, 0.0, 114.0));
     short_block_front.indices.push((0, 1, 2));
-    short_block_front.indices.push((0, 3, 2));
+    short_block_front.indices.push((0, 2, 3));
     
     
     let mut tall_block_top = Mesh::with_material(blue_material.clone());
@@ -153,7 +153,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     tall_block_top.verts.push((314.0, 330.0, 456.0));
     tall_block_top.verts.push((472.0, 330.0, 406.0));
     tall_block_top.indices.push((0, 1, 2));
-    tall_block_top.indices.push((0, 3, 2));
+    tall_block_top.indices.push((0, 2, 3));
     
     let mut tall_block_bot = Mesh::with_material(blue_material.clone());
     tall_block_bot.verts.push((423.0, 0.1, 247.0));
@@ -161,7 +161,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     tall_block_bot.verts.push((314.0, 0.1, 456.0));
     tall_block_bot.verts.push((472.0, 0.1, 406.0));
     tall_block_bot.indices.push((0, 1, 2));
-    tall_block_bot.indices.push((0, 3, 2));
+    tall_block_bot.indices.push((0, 2, 3));
     
     let mut tall_block_left = Mesh::with_material(blue_material.clone());
     tall_block_left.verts.push((423.0, 0.0, 247.0));
@@ -169,7 +169,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     tall_block_left.verts.push((472.0, 330.0, 406.0));
     tall_block_left.verts.push((472.0, 0.0, 406.0));
     tall_block_left.indices.push((0, 1, 2));
-    tall_block_left.indices.push((0, 3, 2));
+    tall_block_left.indices.push((0, 2, 3));
     
     let mut tall_block_back = Mesh::with_material(blue_material.clone());
     tall_block_back.verts.push((472.0, 330.0, 406.0));
@@ -177,7 +177,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     tall_block_back.verts.push((314.0, 330.0, 456.0));
     tall_block_back.verts.push((314.0, 0.0, 406.0));
     tall_block_back.indices.push((0, 1, 2));
-    tall_block_back.indices.push((0, 3, 2));
+    tall_block_back.indices.push((0, 2, 3));
     
     let mut tall_block_right = Mesh::with_material(blue_material.clone());
     tall_block_right.verts.push((314.0, 0.0, 456.0));
@@ -185,7 +185,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     tall_block_right.verts.push((265.0, 330.0, 296.0));
     tall_block_right.verts.push((265.0, 0.0, 296.0));
     tall_block_right.indices.push((0, 1, 2));
-    tall_block_right.indices.push((0, 3, 2));
+    tall_block_right.indices.push((0, 2, 3));
     
     let mut tall_block_front = Mesh::with_material(blue_material.clone());
     tall_block_front.verts.push((265.0, 0.0, 296.0));
@@ -193,7 +193,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     tall_block_front.verts.push((423.0, 330.0, 247.0));
     tall_block_front.verts.push((423.0, 0.0, 247.0));
     tall_block_front.indices.push((0, 1, 2));
-    tall_block_front.indices.push((0, 3, 2));
+    tall_block_front.indices.push((0, 2, 3));
 
     let mut mirror = Mesh::with_material(mirror_material.clone());
     mirror.verts.push((552.0, 50.0, 50.));
@@ -201,7 +201,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     mirror.verts.push((549.0, 488.8, 509.2));
     mirror.verts.push((552.0, 488.8, 50.0));
     mirror.indices.push((0, 1, 2));
-    mirror.indices.push((0, 3, 2));
+    mirror.indices.push((0, 2, 3));
 
 
     let mut total = 0;
