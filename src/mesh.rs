@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use bevy_color::{Gray, LinearRgba};
 use glam::*;
 use crate::common::*;
 use embree4_rs::{geometry::TriangleMeshGeometry, Device, Scene};
@@ -12,7 +13,7 @@ pub struct Mesh {
 }
 
 pub struct Material {
-    pub color: Vec4,
+    pub color: LinearRgba,
 }
 
 impl Default for Mesh {
@@ -39,7 +40,7 @@ impl Mesh {
 impl Default for Material {
     fn default() -> Self {
         Self {
-            color: Vec4::new(1.0, 0.0, 0.0, 1.0),
+            color: LinearRgba::BLACK,
         }
     }
 }
