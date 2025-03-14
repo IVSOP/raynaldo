@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use bevy_color::LinearRgba;
-use glam::*;
 use crate::common::*;
-use embree4_rs::{geometry::TriangleMeshGeometry, Device, Scene};
 use anyhow::Result;
+use bevy_color::LinearRgba;
+use embree4_rs::{Device, Scene, geometry::TriangleMeshGeometry};
+use glam::*;
 
 pub struct Mesh {
     pub verts: Vec<(f32, f32, f32)>,
@@ -83,7 +83,7 @@ impl Default for MeshStorage {
 impl MeshStorage {
     // returns the ID of this mesh, or error
     // the mesh is moved into internal structure
-    pub fn attach<'a>(&mut self, mesh: Mesh, device: &Device, scene: &mut Scene<'a>) -> Result<u32> {
+    pub fn attach(&mut self, mesh: Mesh, device: &Device, scene: &mut Scene<'_>) -> Result<u32> {
         let embree_mesh = TriangleMeshGeometry::try_new(device, &mesh.verts, &mesh.indices)?;
         let id: u32 = scene.attach_geometry(&embree_mesh)?;
 
@@ -92,7 +92,7 @@ impl MeshStorage {
     }
 
     pub fn get(&self, id: u32) -> Option<&Mesh> {
-        return self.meshes.get(&id)
+        return self.meshes.get(&id);
     }
 }
 
@@ -104,7 +104,7 @@ pub struct Light {
 pub enum LightType {
     AMBIENT,
     POINT(Vec3), // stores position
-    // AREA,
+                 // AREA,
 }
 
 pub struct LightStorage {
@@ -113,8 +113,6 @@ pub struct LightStorage {
 
 impl Default for LightStorage {
     fn default() -> Self {
-        Self {
-            lights: Vec::new(),
-        }
+        Self { lights: Vec::new() }
     }
 }

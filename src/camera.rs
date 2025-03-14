@@ -1,19 +1,18 @@
+use crate::common::*;
+use crate::mesh::*;
 use bevy_color::LinearRgba;
-use glam::*;
-use image::Rgb32FImage;
 use embree4_rs::*;
 use embree4_sys::RTCRay;
-use crate::mesh::*;
-use crate::common::*;
+use glam::*;
 use image::Rgb;
+use image::Rgb32FImage;
 
 #[derive(Debug)]
 pub struct Camera {
     pub pos: Vec3,
     // pub up: Vec3,
     // pub at_point: Vec3,
-
-    pub pixel00_loc: Vec3,    // Location of pixel 0, 0
+    pub pixel00_loc: Vec3,   // Location of pixel 0, 0
     pub pixel_delta_u: Vec3, // Offset to pixel to the right
     pub pixel_delta_v: Vec3, // Offset to pixel below
 
@@ -33,10 +32,8 @@ pub struct Camera {
 const DEPTH: u32 = 3;
 const EPSILON: f32 = 1e-3;
 
-
 impl Camera {
     pub fn new(pos: Vec3, at_point: Vec3, up: Vec3, w_u32: u32, h_u32: u32, h_fov: f32) -> Self {
-
         let w = w_u32 as f32;
         let h = h_u32 as f32;
 
@@ -102,7 +99,8 @@ impl Camera {
             pc.y = (y as f32) + 0.5;
         }
 
-        let pixel_sample = self.pixel00_loc + (pc.x * self.pixel_delta_u) + (pc.y * self.pixel_delta_v);
+        let pixel_sample =
+            self.pixel00_loc + (pc.x * self.pixel_delta_u) + (pc.y * self.pixel_delta_v);
         let dir = (pixel_sample - self.pos).normalize();
 
         // Ray::new(self.pos, dir, LinearRgba::BLACK, x, y, 1.0)
@@ -128,10 +126,16 @@ impl Camera {
     // }
 
     // returns (total rays casted, hits)
-    fn trace<'a>(&self, ray: RTCRay, scene: &CommittedScene<'a>, meshes: &MeshStorage, lights: &LightStorage, depth: u32) -> LinearRgba {
-
+    fn trace(
+        &self,
+        ray: RTCRay,
+        scene: &CommittedScene<'_>,
+        meshes: &MeshStorage,
+        lights: &LightStorage,
+        depth: u32,
+    ) -> LinearRgba {
         if depth > 3 {
-            return self.background
+            return self.background;
         }
 
         match scene.intersect_1(ray).unwrap() {
@@ -157,18 +161,28 @@ impl Camera {
                 if depth < DEPTH {
                     let spec = material.specular;
                     if spec.red > 0.0 || spec.green > 0.0 || spec.blue > 0.0 {
-                        color += self.specular_reflection(hit_pos, dir, normal, material, depth, scene, meshes, lights);
+                        color += self.specular_reflection(
+                            hit_pos, dir, normal, material, depth, scene, meshes, lights,
+                        );
                     }
                 }
 
                 // material.color
                 color
-            },
-            None => self.background
+            }
+            None => self.background,
         }
     }
 
-    pub fn render_pixel<'a>(&self, x: u32, y: u32, scene: &CommittedScene<'a>, meshes: &MeshStorage, lights: &LightStorage, spp: u32) -> LinearRgba {
+    pub fn render_pixel(
+        &self,
+        x: u32,
+        y: u32,
+        scene: &CommittedScene<'_>,
+        meshes: &MeshStorage,
+        lights: &LightStorage,
+        spp: u32,
+    ) -> LinearRgba {
         let mut base_color = LinearRgba::BLACK;
         let sppf = 1.0 / spp as f32;
 
@@ -181,7 +195,14 @@ impl Camera {
         base_color
     }
 
-    pub fn render<'a>(&self, image: &mut Rgb32FImage, scene: &CommittedScene<'a>, meshes: &MeshStorage, lights: &LightStorage, spp: u32) {
+    pub fn render(
+        &self,
+        image: &mut Rgb32FImage,
+        scene: &CommittedScene<'_>,
+        meshes: &MeshStorage,
+        lights: &LightStorage,
+        spp: u32,
+    ) {
         // TODO: paralelize this. image access causes problems
         for y in 0..self.h {
             for x in 0..self.w {
@@ -203,15 +224,23 @@ impl Camera {
         }
     }
 
-    pub fn handle_point_light<'a>(&self, material: &Material, light: &Light, hit_pos: Vec3, normal: Vec3, light_pos: Vec3, scene: &CommittedScene<'a>) -> LinearRgba {
-        if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0 {
+    pub fn handle_point_light(
+        &self,
+        material: &Material,
+        light: &Light,
+        hit_pos: Vec3,
+        normal: Vec3,
+        light_pos: Vec3,
+        scene: &CommittedScene<'_>,
+    ) -> LinearRgba {
+        if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
+        {
             // compiler please take care of this
             let distance_to_light = (light_pos - hit_pos).length();
             let dir_to_light = (light_pos - hit_pos).normalize();
 
             let light_cos = dir_to_light.dot(normal);
             if light_cos > 0.0 {
-
                 // make a ray to the light source to check if there is a clear path from the hit position to the light
                 // if there is, add light contribution
 
@@ -241,27 +270,32 @@ impl Camera {
                     ) * light_cos;
 
                     // println!("{:?}", color);
-                    return color
+                    return color;
                 }
             }
         }
-    
+
         LinearRgba::BLACK
     }
 
     // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
-    pub fn direct_lighting<'a>(&self, hit_pos: Vec3, normal: Vec3, material: &Material, lights: &LightStorage, scene: &CommittedScene<'a>) -> LinearRgba {
+    pub fn direct_lighting(
+        &self,
+        hit_pos: Vec3,
+        normal: Vec3,
+        material: &Material,
+        lights: &LightStorage,
+        scene: &CommittedScene<'_>,
+    ) -> LinearRgba {
         let mut color = LinearRgba::BLACK;
 
         // loop over all light sources
         for light in lights.lights.iter() {
             color += match light.light_type {
-                LightType::AMBIENT => {
-                    self.handle_ambient_light(material, light)
-                },
+                LightType::AMBIENT => self.handle_ambient_light(material, light),
                 LightType::POINT(light_pos) => {
                     self.handle_point_light(material, light, hit_pos, normal, light_pos, scene)
-                },
+                }
             }
         }
 
@@ -269,7 +303,17 @@ impl Camera {
     }
 
     // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
-    pub fn specular_reflection<'a>(&self, hit: Vec3, dir: Vec3, normal: Vec3, material: &Material, depth: u32, scene: &CommittedScene<'a>, meshes: &MeshStorage, lights: &LightStorage) -> LinearRgba {
+    pub fn specular_reflection(
+        &self,
+        hit: Vec3,
+        dir: Vec3,
+        normal: Vec3,
+        material: &Material,
+        depth: u32,
+        scene: &CommittedScene<'_>,
+        meshes: &MeshStorage,
+        lights: &LightStorage,
+    ) -> LinearRgba {
         let rdir = dir.reflect(normal);
 
         let mut offset = EPSILON * normal;

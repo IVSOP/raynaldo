@@ -1,9 +1,9 @@
 use anyhow::Context;
 use cornell::cornell_box;
-use image::buffer::ConvertBuffer;
-use image::{Rgb32FImage, RgbImage};
 use embree4_rs::*;
 use glam::*;
+use image::buffer::ConvertBuffer;
+use image::{Rgb32FImage, RgbImage};
 use mesh::*;
 mod common;
 // use common::*;
@@ -19,8 +19,14 @@ const W: u32 = 640;
 const H: u32 = 640;
 
 fn main() -> anyhow::Result<()> {
-
-    let camera = Camera::new(Vec3::new(280.0, 265.0, -500.0), Vec3::new(280.0, 260.0, 0.0), Vec3::Y, W, H, 60.0_f32.to_radians());
+    let camera = Camera::new(
+        Vec3::new(280.0, 265.0, -500.0),
+        Vec3::new(280.0, 260.0, 0.0),
+        Vec3::Y,
+        W,
+        H,
+        60.0_f32.to_radians(),
+    );
     let mut image = Rgb32FImage::new(W, H);
 
     let device = Device::try_new(None)?;
@@ -31,7 +37,6 @@ fn main() -> anyhow::Result<()> {
             flags: embree4_sys::RTCSceneFlags::ROBUST,
         },
     )?;
-
 
     let mut meshes = MeshStorage::default();
     let mut lights = LightStorage::default();

@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use std::ops::RangeBounds;
 use glam::*;
+use std::ops::RangeBounds;
 
 #[inline]
 pub fn randu32(range: impl RangeBounds<u32>) -> u32 {
@@ -19,15 +19,21 @@ pub fn randf32_normalized() -> f32 {
 // middle
 #[inline]
 pub fn randf32_range(min: f32, max: f32) -> f32 {
-     debug_assert!(min < max, "min should be less than max");
+    debug_assert!(min < max, "min should be less than max");
     min + (max - min) * fastrand::f32()
 }
 
 // TODO: test if faster than randomly creating 3x random floats and normalizing the vector? I could generate x, use the remaining valid len to generate y, use remaining len to generate z
 #[inline]
 pub fn rand_dir() -> Vec3 {
-    Vec3::new(randf32_normalized(), randf32_normalized(), randf32_normalized()).normalize()
+    Vec3::new(
+        randf32_normalized(),
+        randf32_normalized(),
+        randf32_normalized(),
+    )
+    .normalize()
 }
+
 #[inline]
 pub fn _rand_dir2() -> Vec2 {
     Vec2::new(randf32_normalized(), randf32_normalized()).normalize()
