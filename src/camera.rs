@@ -1,10 +1,11 @@
+use bevy_color::LinearRgba;
 use glam::*;
 use image::Rgb32FImage;
 use embree4_rs::*;
 use embree4_sys::RTCRay;
 use crate::mesh::*;
-// use rayon::prelude::{IntoParallelIterator, ParallelIterator}; // acabei por nao usar parallel porque preciso de aceder a info, FIX:
 use crate::common::*;
+use image::Rgb;
 
 #[derive(Debug)]
 pub struct Camera {
@@ -21,11 +22,11 @@ pub struct Camera {
     pub h: u32,
 }
 
-pub struct RayInfo {
-    pub x: u32,
-    pub y: u32,
-    pub depth: u32,
-}
+// pub struct RayInfo {
+//     pub x: u32,
+//     pub y: u32,
+//     pub depth: u32,
+// }
 
 impl Camera {
     pub fn new(pos: Vec3, at_point: Vec3, up: Vec3, w_u32: u32, h_u32: u32, h_fov: f32) -> Self {
@@ -82,7 +83,7 @@ impl Camera {
         }
     }
 
-    pub fn generate_ray(&self, x: u32, y: u32, jitter: Option<(f32, f32)>, id: u32) -> RTCRay {
+    pub fn generate_ray(&self, x: u32, y: u32, jitter: Option<(f32, f32)>) -> RTCRay {
         let mut pc = Vec3::ZERO;
 
         if let Some((j1, j2)) = jitter {
@@ -105,7 +106,7 @@ impl Camera {
             dir_x: dir.x,
             dir_y: dir.y,
             dir_z: dir.z,
-            id,
+            // id,
             // time: 10000000000.0,
             ..default()
         }
@@ -119,63 +120,44 @@ impl Camera {
     //     (index % self.w, index / self.w)
     // }
 
-    pub fn render<'a>(&self, image: &mut Rgb32FImage, scene: &mut CommittedScene<'a>, storage: &MeshStorage, spp: u32) {
-        let sppf = 1.0 / spp as f32;
+    // returns (total rays casted, hits)
+    fn trace<'a>(&self, ray: RTCRay, scene: &CommittedScene<'a>, storage: &MeshStorage, sppf: f32, depth: u32) -> Option<LinearRgba> {
 
-        // all the rays are first accumulated in a vector
-        // after the intersection, I need to be able to tell what pixel coordinates they came from, how much depth they have, etc
-        // so I use their ID to index into the info array
-        let mut rays: Vec<RTCRay> = Vec::new();
-        let mut ray_info: Vec<RayInfo> = Vec::new();
-        let mut num_rays = 0;
+        match scene.intersect_1(ray).unwrap() {
+            Some(hit) => {
+                let origin = Vec3::new(hit.ray.org_x, hit.ray.org_y, hit.ray.org_z);
+                let dir = Vec3::new(hit.ray.dir_x, hit.ray.dir_y, hit.ray.dir_z);
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! A NORMAL NAO VEM NECESSARIAMENTE NORMALIZADA
+                let normal = Vec3::new(hit.hit.Ng_x, hit.hit.Ng_y, hit.hit.Ng_z);
+                let mesh: &Mesh = storage.get(hit.hit.geomID).unwrap();
+                // println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
+                
+                Some(mesh.material.color * sppf)
+            },
+            None => None,
+        }
+    }
 
-        for y in 0..self.h {
-            for x in 0..self.w {
-                for _ in 0..spp {
-                    rays.push(self.generate_ray(x, y, None, num_rays));
-                    // TODO: this is very ugly and could prob be optimized to make use of x and y
-                    ray_info.push(RayInfo {
-                        x,
-                        y,
-                        depth: 0,
-                    });
-                    num_rays += 1;
-                }
+    pub fn render_pixel<'a>(&self, x: u32, y: u32, scene: &CommittedScene<'a>, storage: &MeshStorage, spp: u32) -> LinearRgba {
+        let mut base_color =  LinearRgba::BLACK;
+        for _ in 0..spp {
+            let ray = self.generate_ray(x, y, None);
+
+            if let Some(color) = self.trace(ray, scene, storage, 1.0 / spp as f32, 0) {
+                base_color += color;
             }
         }
 
-        let t0 = std::time::Instant::now();
-        let hits: usize = rays
-            .into_iter()
-            .map(|ray| match scene.intersect_1(ray).unwrap() {
-                Some(hit) => {
-                    let origin = Vec3::new(hit.ray.org_x, hit.ray.org_y, hit.ray.org_z);
-                    let dir = Vec3::new(hit.ray.dir_x, hit.ray.dir_y, hit.ray.dir_z);
-                    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! A NORMAL NAO VEM NECESSARIAMENTE NORMALIZADA
-                    let normal = Vec3::new(hit.hit.Ng_x, hit.hit.Ng_y, hit.hit.Ng_z);
-                    let mesh: &Mesh = storage.get(hit.hit.geomID).unwrap();
-                    // println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
-                    let id = hit.ray.id;
+        base_color
+    }
 
-                    let info = ray_info.get(id as usize).unwrap();
-                    let pixel = image.get_pixel_mut(info.x, info.y);
-                    let color = mesh.material.color * sppf;
-
-                    pixel[0] += color.red;
-                    pixel[1] += color.green;
-                    pixel[2] += color.blue;
-
-                    1
-                },
-                None => 0,
-            })
-            .sum();
-        let elapsed = t0.elapsed();
-        let rays_per_sec = (num_rays as f32 / elapsed.as_secs_f32()) as usize;
-
-        println!("Traced {} rays in {:?}", num_rays, elapsed);
-        let frac_hits = hits as f32 / num_rays as f32;
-        println!("  {} hits ({:.3}%)", hits, 100.0 * frac_hits);
-        println!("  ({} rays/s)", rays_per_sec);
+    pub fn render<'a>(&self, image: &mut Rgb32FImage, scene: &CommittedScene<'a>, storage: &MeshStorage, spp: u32) {
+        // TODO: paralelize this. image access causes problems
+        for y in 0..self.h {
+            for x in 0..self.w {
+                let color = self.render_pixel(x, y, scene, storage, spp);
+                *image.get_pixel_mut(x, y) = Rgb::<f32>([color.red, color.green, color.blue]);
+            }
+        }
     }
 }
