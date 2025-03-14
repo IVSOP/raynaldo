@@ -64,7 +64,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     ceiling.verts.push((0.0, 548.8, 559.2));
     ceiling.verts.push((556.0, 548.8, 559.2));
     ceiling.indices.push((0, 1, 2));
-    ceiling.indices.push((0, 2, 3));
+    ceiling.indices.push((3, 0, 2));
     
     let mut floor = Mesh::with_material(white_material.clone());
     floor.verts.push((552.8, 0.0, 0.0));
@@ -227,6 +227,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     let ambient = Light {
         light_type: LightType::AMBIENT,
         color: LinearRgba::rgb(0.07, 0.07, 0.07)
+        // color: LinearRgba::rgb(1.0, 1.0, 1.0)
     };
     lights.lights.push(ambient);
 
@@ -242,6 +243,13 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
             lights.lights.push(point_light);
         }
     }
+
+    // lights.lights.push(
+    //     Light {
+    //         light_type: LightType::POINT(Vec3::new(378.0, 545.0, 380.0)),
+    //         color: LinearRgba::rgb(0.1, 0.1, 0.1),
+    //     }
+    // );
 
     Ok(total)
 }

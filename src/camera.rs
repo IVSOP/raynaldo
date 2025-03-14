@@ -216,7 +216,7 @@ impl Camera {
                 // if there is, add light contribution
 
                 let mut offset = EPSILON * normal;
-                if dir.dot(normal) < 0.0 {
+                if dir_to_light.dot(normal) < 0.0 {
                     offset *= -1.0;
                 }
                 let shadow_ray_origin = hit_pos + offset;
@@ -239,7 +239,7 @@ impl Camera {
                         light.color.blue * material.color.blue,
                     ) * light_cos;
 
-                    println!("{:?}", color);
+                    // println!("{:?}", color);
                     return color
                 }
             }
