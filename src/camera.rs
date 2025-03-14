@@ -1,3 +1,4 @@
+use bevy_color::Gray;
 use bevy_color::LinearRgba;
 use glam::*;
 use image::Rgb32FImage;
@@ -132,10 +133,9 @@ impl Camera {
 
         match scene.intersect_1(ray).unwrap() {
             Some(hit) => {
-                let color = LinearRgba::BLACK;
+                let mut color = LinearRgba::BLACK;
                 let mesh: &Mesh = meshes.get(hit.hit.geomID).unwrap();
                 let material = &mesh.material;
-
 
                 // if material.is_light {
                 //     return material.emissive
@@ -148,9 +148,10 @@ impl Camera {
                 // // println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
                 let hit_pos = origin + dir * hit.ray.tfar;
 
-                // color += self.direct_lighting(hit_pos, material, lights);
+                color += self.direct_lighting(hit_pos, &material, lights);
 
-                material.color
+                // material.color
+                color
             },
             None => self.background
         }
@@ -177,5 +178,27 @@ impl Camera {
                 *image.get_pixel_mut(x, y) = Rgb::<f32>([color.red, color.green, color.blue]);
             }
         }
+    }
+
+    // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
+    pub fn direct_lighting(&self, hit_pos: Vec3, material: &Material, lights: &LightStorage) -> LinearRgba {
+        let mut color = LinearRgba::BLACK;
+
+        for light in lights.lights.iter() {
+            color += match light.light_type {
+                LightType::AMBIENT => {
+                    LinearRgba::rgb(
+                        light.color.red * material.color.red,
+                        light.color.green * material.color.green,
+                        light.color.blue * material.color.blue,
+                    )
+                },
+                LightType::POINT => {
+                    panic!("not implemented");
+                },
+            }
+        }
+
+        color
     }
 }

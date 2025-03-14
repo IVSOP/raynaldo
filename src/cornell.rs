@@ -169,5 +169,11 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     let _mesh_id: u32 = meshes.attach(tall_block_back, &device, &mut scene)?; total += 1;
     let _mesh_id: u32 = meshes.attach(tall_block_front, &device, &mut scene)?; total += 1;
 
+    let ambient = Light {
+        light_type: LightType::AMBIENT,
+        color: LinearRgba::rgb(0.07, 0.07, 0.07)
+    };
+    lights.lights.push(ambient);
+
     Ok(total)
 }

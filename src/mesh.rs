@@ -102,6 +102,7 @@ impl MeshStorage {
 
 pub struct Light {
     pub light_type: LightType,
+    pub color: LinearRgba,
 }
 
 pub enum LightType {
