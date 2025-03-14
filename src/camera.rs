@@ -156,7 +156,7 @@ impl Camera {
                 // TODO: I just ported over the depth checks. aren't they inneficient??????
                 if depth < DEPTH {
                     let spec = material.specular;
-                    if spec.red > 0.0 && spec.green > 0.0 && spec.blue > 0.0 {
+                    if spec.red > 0.0 || spec.green > 0.0 || spec.blue > 0.0 {
                         color += self.specular_reflection(hit_pos, dir, normal, material, depth, scene, meshes, lights);
                     }
                 }
@@ -192,7 +192,7 @@ impl Camera {
     }
 
     pub fn handle_ambient_light(&self, material: &Material, light: &Light) -> LinearRgba {
-        if material.color.red > 0.0 && material.color.green > 0.0 && material.color.blue > 0.0 {
+        if material.color.red > 0.0 || material.color.green > 0.0 || material.color.blue > 0.0 {
             LinearRgba::rgb(
                 light.color.red * material.color.red,
                 light.color.green * material.color.green,
@@ -204,7 +204,7 @@ impl Camera {
     }
 
     pub fn handle_point_light<'a>(&self, material: &Material, light: &Light, hit_pos: Vec3, normal: Vec3, dir: Vec3, light_pos: Vec3, scene: &CommittedScene<'a>) -> LinearRgba {
-        if material.diffuse.red > 0.0 && material.diffuse.green > 0.0 && material.diffuse.blue > 0.0 {
+        if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0 {
             // compiler please take care of this
             let distance_to_light = (light_pos - hit_pos).length();
             let dir_to_light = (light_pos - hit_pos).normalize();
