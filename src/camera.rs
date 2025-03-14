@@ -20,6 +20,8 @@ pub struct Camera {
     // pub tan_halfh: f32,
     pub w: u32,
     pub h: u32,
+
+    pub background: LinearRgba,
 }
 
 // pub struct RayInfo {
@@ -80,6 +82,7 @@ impl Camera {
             // tan_halfh,
             w: w_u32,
             h: h_u32,
+            background: LinearRgba::new(0.1, 0.1, 0.8, 1.0),
         }
     }
 
@@ -121,7 +124,7 @@ impl Camera {
     // }
 
     // returns (total rays casted, hits)
-    fn trace<'a>(&self, ray: RTCRay, scene: &CommittedScene<'a>, storage: &MeshStorage, sppf: f32, depth: u32) -> Option<LinearRgba> {
+    fn trace<'a>(&self, ray: RTCRay, scene: &CommittedScene<'a>, storage: &MeshStorage, depth: u32) -> LinearRgba {
 
         match scene.intersect_1(ray).unwrap() {
             Some(hit) => {
@@ -132,20 +135,20 @@ impl Camera {
                 let mesh: &Mesh = storage.get(hit.hit.geomID).unwrap();
                 // println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
                 
-                Some(mesh.material.color * sppf)
+                mesh.material.color
             },
-            None => None,
+            None => self.background
         }
     }
 
     pub fn render_pixel<'a>(&self, x: u32, y: u32, scene: &CommittedScene<'a>, storage: &MeshStorage, spp: u32) -> LinearRgba {
-        let mut base_color =  LinearRgba::BLACK;
-        for _ in 0..spp {
-            let ray = self.generate_ray(x, y, None);
+        let mut base_color = LinearRgba::BLACK;
+        let sppf = 1.0 / spp as f32;
 
-            if let Some(color) = self.trace(ray, scene, storage, 1.0 / spp as f32, 0) {
-                base_color += color;
-            }
+        for _ in 0..spp {
+            let ray = self.generate_ray(x, y, Some((fastrand::f32(), fastrand::f32())));
+
+            base_color += self.trace(ray, scene, storage, 0) * sppf;
         }
 
         base_color
