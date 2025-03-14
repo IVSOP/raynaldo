@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use bevy_color::{Gray, LinearRgba};
+use bevy_color::LinearRgba;
 use glam::*;
 use crate::common::*;
 use embree4_rs::{geometry::TriangleMeshGeometry, Device, Scene};
@@ -12,8 +12,25 @@ pub struct Mesh {
     pub material: Material,
 }
 
+#[derive(Debug, Clone)]
 pub struct Material {
     pub color: LinearRgba,
+}
+
+impl Material {
+    pub fn color(color: LinearRgba) -> Self {
+        Self {
+            color,
+        }
+    }
+}
+
+impl Default for Material {
+    fn default() -> Self {
+        Self {
+            color: LinearRgba::RED,
+        }
+    }
 }
 
 impl Default for Mesh {
@@ -28,7 +45,7 @@ impl Default for Mesh {
 
 impl Mesh {
     // number of triangles, NOT vertices
-    pub fn new_tri_capacity(num_triangles: usize) -> Self {
+    pub fn _new_tri_capacity(num_triangles: usize) -> Self {
         Self {
             verts: Vec::with_capacity(3 * num_triangles),
             indices: Vec::with_capacity(num_triangles),
@@ -36,17 +53,16 @@ impl Mesh {
         }
     }
 
-    pub fn new() -> Self {
-        Self {
-            ..default()
-        }
-    }
-}
+    // pub fn new() -> Self {
+    //     Self {
+    //         ..default()
+    //     }
+    // }
 
-impl Default for Material {
-    fn default() -> Self {
+    pub fn with_material(material: Material) -> Self {
         Self {
-            color: LinearRgba::BLACK,
+            material,
+            ..default()
         }
     }
 }

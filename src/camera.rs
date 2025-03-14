@@ -1,23 +1,22 @@
-use bevy_color::{Gray, LinearRgba};
 use glam::*;
 use image::Rgb32FImage;
 use embree4_rs::*;
 use embree4_sys::RTCRay;
 use crate::mesh::*;
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+// use rayon::prelude::{IntoParallelIterator, ParallelIterator}; // acabei por nao usar parallel porque preciso de aceder a info, FIX:
 use crate::common::*;
 
 #[derive(Debug)]
 pub struct Camera {
     pub pos: Vec3,
-    pub up: Vec3,
-    pub at_point: Vec3,
+    // pub up: Vec3,
+    // pub at_point: Vec3,
 
     pub pixel00_loc: Vec3,    // Location of pixel 0, 0
     pub pixel_delta_u: Vec3, // Offset to pixel to the right
     pub pixel_delta_v: Vec3, // Offset to pixel below
 
-    pub tan_halfh: f32,
+    // pub tan_halfh: f32,
     pub w: u32,
     pub h: u32,
 }
@@ -72,12 +71,12 @@ impl Camera {
 
         Self {
             pos,
-            up,
-            at_point,
+            // up,
+            // at_point,
             pixel00_loc,
             pixel_delta_u,
             pixel_delta_v,
-            tan_halfh,
+            // tan_halfh,
             w: w_u32,
             h: h_u32,
         }
