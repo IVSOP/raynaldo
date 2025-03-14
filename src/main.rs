@@ -6,7 +6,7 @@ use image::buffer::ConvertBuffer;
 use image::{Rgb32FImage, RgbImage};
 use mesh::*;
 mod common;
-// use common::*;
+use std::env;
 
 mod cornell;
 
@@ -19,6 +19,18 @@ const W: u32 = 640;
 const H: u32 = 640;
 
 fn main() -> anyhow::Result<()> {
+    let args: Vec<String> = env::args().collect();
+
+    let mut rays_per_pixel = 5; // low on purpose for dev speed. use 20 or something
+    if args.len() > 1 {
+        match args[1].parse::<u32>() {
+            Ok(num) => rays_per_pixel = num,
+            _ => {
+                panic!("Provided value {} is not a valid u32", args[1]);
+            }
+        }
+    }
+
     let camera = Camera::new(
         Vec3::new(280.0, 265.0, -500.0),
         Vec3::new(280.0, 260.0, 0.0),
@@ -44,7 +56,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut commited_scene = scene.commit()?;
 
-    camera.render(&mut image, &mut commited_scene, &meshes, &lights, 20);
+    camera.render(&mut image, &mut commited_scene, &meshes, &lights, rays_per_pixel);
 
     let image: RgbImage = image.convert();
     image.save("MyImage.png").context("Error saving image")?;
