@@ -1,4 +1,5 @@
 use bevy_color::LinearRgba;
+use glam::Vec3;
 use crate::mesh::*;
 use embree4_rs::*;
 use anyhow::*;
@@ -228,6 +229,19 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
         color: LinearRgba::rgb(0.07, 0.07, 0.07)
     };
     lights.lights.push(ambient);
+
+    let n_points_dim = 3; // must be 1, 3 or 5
+    let n_half: i32 = (n_points_dim - 1) / 2;
+    for x in -n_half..(n_half + 1) {
+        for z in -n_half..(n_half + 1) {
+            let power = 1.0 / ((n_points_dim * n_points_dim) as f32);
+            let point_light = Light {
+                light_type: LightType::POINT(Vec3::new(278.0 + (x as f32 * 100.0), 545.0, 280.0 + (z as f32 * 100.0))),
+                color: LinearRgba::rgb(power, power, power),
+            };
+            lights.lights.push(point_light);
+        }
+    }
 
     Ok(total)
 }

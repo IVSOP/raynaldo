@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use bevy_color::{Gray, LinearRgba};
+use bevy_color::LinearRgba;
 use glam::*;
 use crate::common::*;
 use embree4_rs::{geometry::TriangleMeshGeometry, Device, Scene};
@@ -20,15 +20,6 @@ pub struct Material {
     pub specular: LinearRgba,
     pub transmission: LinearRgba,
     pub refraction: f32,
-}
-
-impl Material {
-    pub fn color(color: LinearRgba) -> Self {
-        Self {
-            color,
-            ..default()
-        }
-    }
 }
 
 impl Default for Material {
@@ -112,7 +103,7 @@ pub struct Light {
 
 pub enum LightType {
     AMBIENT,
-    POINT,
+    POINT(Vec3), // stores position
     // AREA,
 }
 

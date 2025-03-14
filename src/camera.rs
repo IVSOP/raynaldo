@@ -1,4 +1,3 @@
-use bevy_color::Gray;
 use bevy_color::LinearRgba;
 use glam::*;
 use image::Rgb32FImage;
@@ -152,13 +151,13 @@ impl Camera {
                 // // println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
                 let hit_pos = origin + dir * hit.ray.tfar;
 
-                color += self.direct_lighting(hit_pos, &material, lights);
+                color += self.direct_lighting(hit_pos, normal, dir, &material, lights, scene);
 
                 // TODO: I just ported over the depth checks. aren't they inneficient??????
                 if depth < DEPTH {
                     let spec = material.specular;
                     if spec.red > 0.0 && spec.green > 0.0 && spec.blue > 0.0 {
-                        color += self.specular_reflection(origin, hit_pos, dir, normal, material, depth, scene, meshes, lights);
+                        color += self.specular_reflection(hit_pos, dir, normal, material, depth, scene, meshes, lights);
                     }
                 }
 
@@ -192,21 +191,75 @@ impl Camera {
         }
     }
 
-    // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
-    pub fn direct_lighting(&self, hit_pos: Vec3, material: &Material, lights: &LightStorage) -> LinearRgba {
-        let mut color = LinearRgba::BLACK;
+    pub fn handle_ambient_light(&self, material: &Material, light: &Light) -> LinearRgba {
+        if material.color.red > 0.0 && material.color.green > 0.0 && material.color.blue > 0.0 {
+            LinearRgba::rgb(
+                light.color.red * material.color.red,
+                light.color.green * material.color.green,
+                light.color.blue * material.color.blue,
+            )
+        } else {
+            LinearRgba::BLACK
+        }
+    }
 
-        for light in lights.lights.iter() {
-            color += match light.light_type {
-                LightType::AMBIENT => {
-                    LinearRgba::rgb(
+    pub fn handle_point_light<'a>(&self, material: &Material, light: &Light, hit_pos: Vec3, normal: Vec3, dir: Vec3, light_pos: Vec3, scene: &CommittedScene<'a>) -> LinearRgba {
+        if material.diffuse.red > 0.0 && material.diffuse.green > 0.0 && material.diffuse.blue > 0.0 {
+            // compiler please take care of this
+            let distance_to_light = (light_pos - hit_pos).length();
+            let dir_to_light = (light_pos - hit_pos).normalize();
+
+            let light_cos = dir_to_light.dot(normal);
+            if light_cos > 0.0 {
+
+                // make a ray to the light source to check if there is a clear path from the hit position to the light
+                // if there is, add light contribution
+
+                let mut offset = EPSILON * normal;
+                if dir.dot(normal) < 0.0 {
+                    offset *= -1.0;
+                }
+                let shadow_ray_origin = hit_pos + offset;
+
+                let shadow_ray = RTCRay {
+                    org_x: shadow_ray_origin.x,
+                    org_y: shadow_ray_origin.y,
+                    org_z: shadow_ray_origin.z,
+                    dir_x: dir_to_light.x,
+                    dir_y: dir_to_light.y,
+                    dir_z: dir_to_light.z,
+                    tfar: distance_to_light - EPSILON,
+                    ..default()
+                };
+
+                if let Some(_) = scene.intersect_1(shadow_ray).unwrap() {
+                    let color = LinearRgba::rgb(
                         light.color.red * material.color.red,
                         light.color.green * material.color.green,
                         light.color.blue * material.color.blue,
-                    )
+                    ) * light_cos;
+
+                    println!("{:?}", color);
+                    return color
+                }
+            }
+        }
+    
+        LinearRgba::BLACK
+    }
+
+    // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
+    pub fn direct_lighting<'a>(&self, hit_pos: Vec3, normal: Vec3, dir: Vec3, material: &Material, lights: &LightStorage, scene: &CommittedScene<'a>) -> LinearRgba {
+        let mut color = LinearRgba::BLACK;
+
+        // loop over all light sources
+        for light in lights.lights.iter() {
+            color += match light.light_type {
+                LightType::AMBIENT => {
+                    self.handle_ambient_light(material, light)
                 },
-                LightType::POINT => {
-                    panic!("point lights not implemented");
+                LightType::POINT(light_pos) => {
+                    self.handle_point_light(material, light, hit_pos, normal, dir, light_pos, scene)
                 },
             }
         }
@@ -215,7 +268,7 @@ impl Camera {
     }
 
     // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
-    pub fn specular_reflection<'a>(&self, origin: Vec3, hit: Vec3, dir: Vec3, normal: Vec3, material: &Material, depth: u32, scene: &CommittedScene<'a>, meshes: &MeshStorage, lights: &LightStorage) -> LinearRgba {
+    pub fn specular_reflection<'a>(&self, hit: Vec3, dir: Vec3, normal: Vec3, material: &Material, depth: u32, scene: &CommittedScene<'a>, meshes: &MeshStorage, lights: &LightStorage) -> LinearRgba {
         let rdir = dir.reflect(normal);
 
         let mut offset = EPSILON * normal;
