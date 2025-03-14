@@ -31,6 +31,10 @@ pub struct Camera {
 //     pub depth: u32,
 // }
 
+const DEPTH: u32 = 3;
+const EPSILON: f32 = 1e-3;
+
+
 impl Camera {
     pub fn new(pos: Vec3, at_point: Vec3, up: Vec3, w_u32: u32, h_u32: u32, h_fov: f32) -> Self {
 
@@ -144,11 +148,19 @@ impl Camera {
                 let origin = Vec3::new(hit.ray.org_x, hit.ray.org_y, hit.ray.org_z);
                 let dir = Vec3::new(hit.ray.dir_x, hit.ray.dir_y, hit.ray.dir_z);
                 // // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! A NORMAL NAO VEM NECESSARIAMENTE NORMALIZADA
-                // let normal = Vec3::new(hit.hit.Ng_x, hit.hit.Ng_y, hit.hit.Ng_z);
+                let normal = Vec3::new(hit.hit.Ng_x, hit.hit.Ng_y, hit.hit.Ng_z).normalize();
                 // // println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
                 let hit_pos = origin + dir * hit.ray.tfar;
 
                 color += self.direct_lighting(hit_pos, &material, lights);
+
+                // TODO: I just ported over the depth checks. aren't they inneficient??????
+                if depth < DEPTH {
+                    let spec = material.specular;
+                    if spec.red > 0.0 && spec.green > 0.0 && spec.blue > 0.0 {
+                        color += self.specular_reflection(origin, hit_pos, dir, normal, material, depth, scene, meshes, lights);
+                    }
+                }
 
                 // material.color
                 color
@@ -194,11 +206,42 @@ impl Camera {
                     )
                 },
                 LightType::POINT => {
-                    panic!("not implemented");
+                    panic!("point lights not implemented");
                 },
             }
         }
 
         color
+    }
+
+    // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
+    pub fn specular_reflection<'a>(&self, origin: Vec3, hit: Vec3, dir: Vec3, normal: Vec3, material: &Material, depth: u32, scene: &CommittedScene<'a>, meshes: &MeshStorage, lights: &LightStorage) -> LinearRgba {
+        let rdir = dir.reflect(normal);
+
+        let mut offset = EPSILON * normal;
+        if rdir.dot(normal) < 0.0 {
+            offset *= -1.0;
+        }
+        let rorign = hit + offset;
+
+        // println!("ray originating at {} with dir {} reflected with dir {} and pos {}", origin, dir, rdir, rorign);
+
+        let new_ray = RTCRay {
+            org_x: rorign.x,
+            org_y: rorign.y,
+            org_z: rorign.z,
+            dir_x: rdir.x,
+            dir_y: rdir.y,
+            dir_z: rdir.z,
+            ..default()
+        };
+
+        let color = self.trace(new_ray, scene, meshes, lights, depth + 1);
+
+        LinearRgba::rgb(
+            material.specular.red * color.red,
+            material.specular.green * color.green,
+            material.specular.blue * color.blue,
+        )
     }
 }

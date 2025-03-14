@@ -2,14 +2,59 @@ use bevy_color::LinearRgba;
 use crate::mesh::*;
 use embree4_rs::*;
 use anyhow::*;
+use crate::common::*;
 
 pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, device: &Device, mut scene: &mut Scene<'a>) -> Result<u32> {
 
-    let white_material = Material::color(LinearRgba::rgb(0.9, 0.9, 0.9));
-    let red_material = Material::color(LinearRgba::rgb(0.9, 0.0, 0.0));
-    let green_material = Material::color(LinearRgba::rgb(0.0, 0.9, 0.0));
-    let blue_material = Material::color(LinearRgba::rgb(0.0, 0.0, 0.9));
-    let orange_material = Material::color(LinearRgba::rgb(0.99, 0.65, 0.));
+    let white_material = Material {
+        color: LinearRgba::rgb(0.9, 0.9, 0.9),
+        diffuse: LinearRgba::rgb(0.4, 0.4, 0.4),
+        specular: LinearRgba::BLACK,
+        transmission: LinearRgba::BLACK,
+        ..default()
+    };
+    let red_material = Material {
+        color: LinearRgba::rgb(0.9, 0.0, 0.0),
+        diffuse: LinearRgba::rgb(0.4, 0.4, 0.4),
+        specular: LinearRgba::BLACK,
+        transmission: LinearRgba::BLACK,
+        ..default()
+    };
+    let green_material = Material {
+        color: LinearRgba::rgb(0.0, 0.9, 0.0),
+        diffuse: LinearRgba::rgb(0.0, 0.0, 0.4),
+        specular: LinearRgba::BLACK,
+        transmission: LinearRgba::BLACK,
+        ..default()
+    };
+    let blue_material = Material {
+        color: LinearRgba::rgb(0.0, 0.0, 0.9),
+        diffuse: LinearRgba::rgb(0.4, 0.4, 0.4),
+        specular: LinearRgba::BLACK,
+        transmission: LinearRgba::BLACK,
+        ..default()
+    };
+    let orange_material = Material {
+        color: LinearRgba::rgb(0.99, 0.65, 0.0),
+        diffuse: LinearRgba::rgb(0.37, 0.24, 0.0),
+        specular: LinearRgba::BLACK,
+        transmission: LinearRgba::BLACK,
+        ..default()
+    };
+    let mirror_material = Material {
+        color: LinearRgba::BLACK,
+        diffuse: LinearRgba::BLACK,
+        specular: LinearRgba::rgb(0.9, 0.9, 0.9),
+        transmission: LinearRgba::BLACK,
+        ..default()
+    };
+    let glass_material = Material {
+        color: LinearRgba::BLACK,
+        diffuse: LinearRgba::BLACK,
+        specular: LinearRgba::rgb(0.2, 0.2, 0.2),
+        transmission: LinearRgba::rgb(0.9, 0.9, 0.9),
+        refraction: 1.2,
+    };
     
     
     let mut ceiling = Mesh::with_material(white_material.clone());
@@ -149,6 +194,14 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     tall_block_front.indices.push((0, 1, 2));
     tall_block_front.indices.push((0, 3, 2));
 
+    let mut mirror = Mesh::with_material(mirror_material.clone());
+    mirror.verts.push((552.0, 50.0, 50.));
+    mirror.verts.push((549.0, 50.0, 509.2));
+    mirror.verts.push((549.0, 488.8, 509.2));
+    mirror.verts.push((552.0, 488.8, 50.0));
+    mirror.indices.push((0, 1, 2));
+    mirror.indices.push((0, 3, 2));
+
 
     let mut total = 0;
     let _mesh_id: u32 = meshes.attach(ceiling, &device, &mut scene)?; total += 1;
@@ -168,6 +221,7 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     let _mesh_id: u32 = meshes.attach(tall_block_left, &device, &mut scene)?; total += 1;
     let _mesh_id: u32 = meshes.attach(tall_block_back, &device, &mut scene)?; total += 1;
     let _mesh_id: u32 = meshes.attach(tall_block_front, &device, &mut scene)?; total += 1;
+    let _mesh_id: u32 = meshes.attach(mirror, &device, &mut scene)?; total += 1;
 
     let ambient = Light {
         light_type: LightType::AMBIENT,

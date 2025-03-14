@@ -15,8 +15,11 @@ pub struct Mesh {
 #[derive(Debug, Clone)]
 pub struct Material {
     pub color: LinearRgba,
-    pub emissive: LinearRgba,
-    pub is_light: bool,
+    // pub emissive: LinearRgba,
+    pub diffuse: LinearRgba,
+    pub specular: LinearRgba,
+    pub transmission: LinearRgba,
+    pub refraction: f32,
 }
 
 impl Material {
@@ -32,8 +35,10 @@ impl Default for Material {
     fn default() -> Self {
         Self {
             color: LinearRgba::RED,
-            emissive: LinearRgba::BLACK,
-            is_light: false,
+            diffuse: LinearRgba::RED,
+            specular: LinearRgba::RED,
+            transmission: LinearRgba::RED,
+            refraction: 1.0,
         }
     }
 }
