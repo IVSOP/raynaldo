@@ -16,21 +16,21 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     };
     let red_material = Material {
         color: LinearRgba::rgb(0.9, 0.0, 0.0),
-        diffuse: LinearRgba::rgb(0.4, 0.4, 0.4),
+        diffuse: LinearRgba::rgb(0.4, 0.0, 0.0),
         specular: LinearRgba::BLACK,
         transmission: LinearRgba::BLACK,
         ..default()
     };
     let green_material = Material {
         color: LinearRgba::rgb(0.0, 0.9, 0.0),
-        diffuse: LinearRgba::rgb(0.0, 0.0, 0.4),
+        diffuse: LinearRgba::rgb(0.0, 0.2, 0.0),
         specular: LinearRgba::BLACK,
         transmission: LinearRgba::BLACK,
         ..default()
     };
     let blue_material = Material {
         color: LinearRgba::rgb(0.0, 0.0, 0.9),
-        diffuse: LinearRgba::rgb(0.4, 0.4, 0.4),
+        diffuse: LinearRgba::rgb(0.0, 0.0, 0.4),
         specular: LinearRgba::BLACK,
         transmission: LinearRgba::BLACK,
         ..default()
@@ -63,8 +63,8 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     ceiling.verts.push((0.0, 548.8, 0.0));
     ceiling.verts.push((0.0, 548.8, 559.2));
     ceiling.verts.push((556.0, 548.8, 559.2));
-    ceiling.indices.push((0, 1, 2));
-    ceiling.indices.push((0, 2, 3));
+    ceiling.indices.push((0, 2, 1));
+    ceiling.indices.push((0, 3, 2));
     
     let mut floor = Mesh::with_material(white_material.clone());
     floor.verts.push((552.8, 0.0, 0.0));
@@ -79,16 +79,16 @@ pub fn cornell_box<'a>(meshes: &mut MeshStorage, lights: &mut LightStorage, devi
     back.verts.push((549.6, 0.0, 559.2));
     back.verts.push((556.0, 548.8, 559.2));
     back.verts.push((0.0, 548.8, 559.2));
-    back.indices.push((0, 1, 2));
-    back.indices.push((0, 2, 3));
+    back.indices.push((2, 1, 0));
+    back.indices.push((3, 2, 0));
     
     let mut left = Mesh::with_material(green_material.clone());
     left.verts.push((0.0, 0.0, 0.0));
     left.verts.push((0., 0., 559.2));
     left.verts.push((0., 548.8, 559.2));
     left.verts.push((0., 548.8, 0.));
-    left.indices.push((0, 1, 2));
-    left.indices.push((0, 2, 3));
+    left.indices.push((0, 2, 1));
+    left.indices.push((0, 3, 2));
     
     let mut right = Mesh::with_material(red_material.clone());
     right.verts.push((552.8, 0.0, 0.));

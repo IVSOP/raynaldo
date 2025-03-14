@@ -233,7 +233,7 @@ impl Camera {
                 };
 
                 // we have a direct path to the light, can add direct illumination
-                if let None = scene.intersect_1(shadow_ray).unwrap() {
+                if scene.intersect_1(shadow_ray).unwrap().is_none() {
                     let color = LinearRgba::rgb(
                         light.color.red * material.diffuse.red,
                         light.color.green * material.diffuse.green,
