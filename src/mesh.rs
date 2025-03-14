@@ -35,6 +35,12 @@ impl Mesh {
             ..default()
         }
     }
+
+    pub fn new() -> Self {
+        Self {
+            ..default()
+        }
+    }
 }
 
 impl Default for Material {
