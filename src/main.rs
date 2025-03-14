@@ -1,12 +1,15 @@
 use anyhow::Context;
 use image::buffer::ConvertBuffer;
 use image::{Rgb32FImage, RgbImage};
-use embree4_rs::{geometry::TriangleMeshGeometry, Device, Scene, SceneOptions};
+use embree4_rs::*;
 use glam::*;
+use mesh::{Mesh, MeshStorage};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 mod common;
 use common::*;
+
+mod mesh;
 
 const W: u32 = 640;
 const H: u32 = 640;
@@ -21,41 +24,46 @@ fn main() -> anyhow::Result<()> {
     }
 
     let device = Device::try_new(None)?;
-
-    let num_tris = 1_000_000;
-    let mut vertices = Vec::with_capacity(3 * num_tris);
-    let mut indices = Vec::with_capacity(num_tris);
-
-    vertices.push((0.0, 0.5, 1.0));
-    vertices.push((1.0, -0.5, 1.0));
-    vertices.push((-1.0, -0.5, 1.0));
-
-    indices.push((0, 1, 2));
-
-    // for i in 0..num_tris as u32 {
-    //     let pos = 1_000.0 * (2.0 * rand_dir() - 1.0);
-
-    //     let p = pos + rand_dir();
-    //     let q = pos + rand_dir();
-    //     let r = pos + rand_dir();
-
-    //     vertices.push((p.x, p.y, p.z));
-    //     vertices.push((q.x, q.y, q.z));
-    //     vertices.push((r.x, r.y, r.z));
-
-    //     indices.push((3 * i, 3 * i + 1, 3 * i + 2));
-    // }
-
-    let mesh = TriangleMeshGeometry::try_new(&device, &vertices, &indices)?;
-    let scene = Scene::try_new(
+    let mut scene = Scene::try_new(
         &device,
         SceneOptions {
             build_quality: embree4_sys::RTCBuildQuality::HIGH,
             flags: embree4_sys::RTCSceneFlags::ROBUST,
         },
     )?;
-    scene.attach_geometry(&mesh)?;
+
+    
+    let num_tris = 1_000_000;
+    let mut mesh = Mesh::new_tri_capacity(num_tris);
+    mesh.verts.push((0.0, 0.5, 1.0));
+    mesh.verts.push((1.0, -0.5, 1.0));
+    mesh.verts.push((-1.0, -0.5, 1.0));
+    mesh.indices.push((0, 1, 2));
+
+    let mut storage = MeshStorage::default();
+    let mesh_id: u32 = storage.attach(mesh, &device, &mut scene)?;
+
+
+
+
+
     let scene = scene.commit()?;
+
+    
+    // // for i in 0..num_tris as u32 {
+    // //     let pos = 1_000.0 * (2.0 * rand_dir() - 1.0);
+
+    // //     let p = pos + rand_dir();
+    // //     let q = pos + rand_dir();
+    // //     let r = pos + rand_dir();
+
+    // //     vertices.push((p.x, p.y, p.z));
+    // //     vertices.push((q.x, q.y, q.z));
+    // //     vertices.push((r.x, r.y, r.z));
+
+    // //     indices.push((3 * i, 3 * i + 1, 3 * i + 2));
+    // // }
+
 
     let num_rays = 1_000_000;
     let rays: Vec<_> = (0..num_rays)
@@ -79,7 +87,16 @@ fn main() -> anyhow::Result<()> {
     let hits: usize = rays
         .into_par_iter()
         .map(|ray| match scene.intersect_1(ray).unwrap() {
-            Some(_) => 1,
+            Some(hit) => {
+                // println!("{:#?}", hit);
+                let origin = Vec3::new(hit.ray.org_x, hit.ray.org_y, hit.ray.org_z);
+                let dir = Vec3::new(hit.ray.dir_x, hit.ray.dir_y, hit.ray.dir_z);
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! A NORMAL NAO VEM NECESSARIAMENTE NORMALIZADA
+                let normal = Vec3::new(hit.hit.Ng_x, hit.hit.Ng_y, hit.hit.Ng_z);
+                let mesh: &Mesh = storage.get(hit.hit.geomID).unwrap();
+                println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
+                1
+            },
             None => 0,
         })
         .sum();

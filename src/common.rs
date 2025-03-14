@@ -32,3 +32,8 @@ pub fn rand_dir() -> Vec3 {
 pub fn _rand_dir2() -> Vec2 {
     Vec2::new(randf32_normalized(), randf32_normalized()).normalize()
 }
+
+#[inline]
+pub fn default<T: Default>() -> T {
+    Default::default()
+}
