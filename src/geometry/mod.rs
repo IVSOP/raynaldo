@@ -3,10 +3,11 @@ use std::collections::HashMap;
 // use crate::common::*;
 use anyhow::Result;
 use bevy_color::LinearRgba;
-use embree4_rs::{Device, Scene, geometry::TriangleMeshGeometry, geometry::UserGeometry};
+use embree4_rs::{
+    Device, Scene,
+    geometry::{SphereGeometry, TriangleMeshGeometry, UserGeometry},
+};
 use glam::*;
-pub mod sphere;
-// use sphere::*;
 
 #[derive(Clone)]
 pub struct Sphere {
@@ -99,9 +100,12 @@ impl GeomStorage {
                 id = scene.attach_geometry(&embree_mesh)?;
             }
             GeomInfo::SPHERE(ref sphere) => {
-                let embree_geom = UserGeometry::try_new(device, sphere)?;
+                let embree_geom = SphereGeometry::try_new(
+                    device,
+                    (sphere.center.x, sphere.center.y, sphere.center.z),
+                    sphere.radius,
+                )?;
                 id = scene.attach_geometry(&embree_geom)?;
-                println!("sphere attached at {} with radius {}, id {id}", sphere.center, sphere.radius);
             }
         }
         self.geom.insert(id, geom);

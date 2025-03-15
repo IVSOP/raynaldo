@@ -150,10 +150,7 @@ impl Camera {
                 let normal = Vec3::new(hit.hit.Ng_x, hit.hit.Ng_y, hit.hit.Ng_z).normalize();
                 // // println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
                 let hit_pos = origin + dir * hit.ray.tfar;
-                if hit.hit.geomID == 18 {
-                    println!("hit sphere at {}", hit_pos);
-                }
-                    
+
                 color += self.direct_lighting(hit_pos, normal, &material, lights, scene);
 
                 // TODO: I just ported over the depth checks. aren't they inneficient??????
