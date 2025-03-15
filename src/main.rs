@@ -1,10 +1,10 @@
 use anyhow::Context;
 use cornell::cornell_box;
 use embree4_rs::*;
+use geometry::*;
 use glam::*;
 use image::buffer::ConvertBuffer;
 use image::{Rgb32FImage, RgbImage};
-use mesh::*;
 mod common;
 use std::env;
 
@@ -13,7 +13,7 @@ mod cornell;
 mod camera;
 use camera::*;
 
-mod mesh;
+mod geometry;
 
 const W: u32 = 640;
 const H: u32 = 640;

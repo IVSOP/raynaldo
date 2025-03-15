@@ -1,5 +1,5 @@
 use crate::common::*;
-use crate::mesh::*;
+use crate::geometry::*;
 use anyhow::*;
 use bevy_color::LinearRgba;
 use embree4_rs::*;
@@ -247,6 +247,12 @@ pub fn cornell_box(
     mirror_mesh.indices.push((0, 2, 3));
     let mirror = Geometry::with_material(mirror_material.clone(), GeomInfo::MESH(mirror_mesh));
 
+    let sphere = Sphere {
+        radius: 110.0,
+        center: Vec3::new(160.0, 320.0, 225.0),
+    };
+    let sphere_geometry = Geometry::with_material(red_material.clone(), GeomInfo::SPHERE(sphere));
+
     let mut total = 0;
     let _ = meshes.attach(ceiling, &device, &mut scene)?;
     total += 1;
@@ -283,6 +289,8 @@ pub fn cornell_box(
     let _ = meshes.attach(tall_block_front, &device, &mut scene)?;
     total += 1;
     let _ = meshes.attach(mirror, &device, &mut scene)?;
+    total += 1;
+    let _ = meshes.attach(sphere_geometry, &device, &mut scene)?;
     total += 1;
 
     let ambient = Light {

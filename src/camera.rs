@@ -1,5 +1,5 @@
 use crate::common::*;
-use crate::mesh::*;
+use crate::geometry::*;
 use bevy_color::LinearRgba;
 use embree4_rs::*;
 use embree4_sys::RTCRay;
@@ -144,17 +144,16 @@ impl Camera {
                 let geometry: &Geometry = geom.get(hit.hit.geomID).unwrap();
                 let material = &geometry.material;
 
-                // if material.is_light {
-                //     return material.emissive
-                // }
-
                 let origin = Vec3::new(hit.ray.org_x, hit.ray.org_y, hit.ray.org_z);
                 let dir = Vec3::new(hit.ray.dir_x, hit.ray.dir_y, hit.ray.dir_z);
                 // // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! A NORMAL NAO VEM NECESSARIAMENTE NORMALIZADA
                 let normal = Vec3::new(hit.hit.Ng_x, hit.hit.Ng_y, hit.hit.Ng_z).normalize();
                 // // println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
                 let hit_pos = origin + dir * hit.ray.tfar;
-
+                if hit.hit.geomID == 18 {
+                    println!("hit sphere at {}", hit_pos);
+                }
+                    
                 color += self.direct_lighting(hit_pos, normal, &material, lights, scene);
 
                 // TODO: I just ported over the depth checks. aren't they inneficient??????
