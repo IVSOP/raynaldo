@@ -1,14 +1,29 @@
 use std::collections::HashMap;
 
-use crate::common::*;
+// use crate::common::*;
 use anyhow::Result;
 use bevy_color::LinearRgba;
 use embree4_rs::{Device, Scene, geometry::TriangleMeshGeometry};
 use glam::*;
 
+#[derive(Clone)]
+pub struct Sphere {}
+
+#[derive(Clone)]
 pub struct Mesh {
     pub verts: Vec<(f32, f32, f32)>,
     pub indices: Vec<(u32, u32, u32)>,
+}
+
+#[derive(Clone)]
+pub enum GeomInfo {
+    MESH(Mesh),
+    SPHERE(Sphere),
+}
+
+#[derive(Clone)]
+pub struct Geometry {
+    pub info: GeomInfo,
     pub material: Material,
 }
 
@@ -39,60 +54,55 @@ impl Default for Mesh {
         Self {
             verts: Vec::new(),
             indices: Vec::new(),
-            material: Material::default(),
         }
     }
 }
 
-impl Mesh {
-    // number of triangles, NOT vertices
-    pub fn _new_tri_capacity(num_triangles: usize) -> Self {
-        Self {
-            verts: Vec::with_capacity(3 * num_triangles),
-            indices: Vec::with_capacity(num_triangles),
-            ..default()
-        }
-    }
-
-    // pub fn new() -> Self {
-    //     Self {
-    //         ..default()
-    //     }
-    // }
-
-    pub fn with_material(material: Material) -> Self {
-        Self {
-            material,
-            ..default()
-        }
+impl Geometry {
+    pub fn with_material(material: Material, info: GeomInfo) -> Self {
+        Self { material, info }
     }
 }
 
-pub struct MeshStorage {
-    pub meshes: HashMap<u32, Mesh>,
+pub struct GeomStorage {
+    pub geom: HashMap<u32, Geometry>,
 }
 
-impl Default for MeshStorage {
+impl Default for GeomStorage {
     fn default() -> Self {
         Self {
-            meshes: HashMap::new(),
+            geom: HashMap::new(),
         }
     }
 }
 
-impl MeshStorage {
+impl GeomStorage {
     // returns the ID of this mesh, or error
     // the mesh is moved into internal structure
-    pub fn attach(&mut self, mesh: Mesh, device: &Device, scene: &mut Scene<'_>) -> Result<u32> {
-        let embree_mesh = TriangleMeshGeometry::try_new(device, &mesh.verts, &mesh.indices)?;
-        let id: u32 = scene.attach_geometry(&embree_mesh)?;
+    pub fn attach(
+        &mut self,
+        geom: Geometry,
+        device: &Device,
+        scene: &mut Scene<'_>,
+    ) -> Result<u32> {
+        let id: u32;
 
-        self.meshes.insert(id, mesh);
+        match geom.info {
+            GeomInfo::MESH(ref mesh) => {
+                let embree_mesh =
+                    TriangleMeshGeometry::try_new(device, &mesh.verts, &mesh.indices)?;
+                id = scene.attach_geometry(&embree_mesh)?;
+            }
+            GeomInfo::SPHERE(ref _sphere) => {
+                panic!("not implemented");
+            }
+        }
+        self.geom.insert(id, geom);
         Ok(id)
     }
 
-    pub fn get(&self, id: u32) -> Option<&Mesh> {
-        return self.meshes.get(&id);
+    pub fn get(&self, id: u32) -> Option<&Geometry> {
+        return self.geom.get(&id);
     }
 }
 

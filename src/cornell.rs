@@ -6,7 +6,7 @@ use embree4_rs::*;
 use glam::Vec3;
 
 pub fn cornell_box(
-    meshes: &mut MeshStorage,
+    meshes: &mut GeomStorage,
     lights: &mut LightStorage,
     device: &Device,
     mut scene: &mut Scene<'_>,
@@ -61,149 +61,191 @@ pub fn cornell_box(
         refraction: 1.2,
     };
 
-    let mut ceiling = Mesh::with_material(white_material.clone());
-    ceiling.verts.push((556.0, 548.8, 0.0));
-    ceiling.verts.push((0.0, 548.8, 0.0));
-    ceiling.verts.push((0.0, 548.8, 559.2));
-    ceiling.verts.push((556.0, 548.8, 559.2));
-    ceiling.indices.push((0, 2, 1));
-    ceiling.indices.push((0, 3, 2));
+    let mut ceiling_mesh = Mesh::default();
+    ceiling_mesh.verts.push((556.0, 548.8, 0.0));
+    ceiling_mesh.verts.push((0.0, 548.8, 0.0));
+    ceiling_mesh.verts.push((0.0, 548.8, 559.2));
+    ceiling_mesh.verts.push((556.0, 548.8, 559.2));
+    ceiling_mesh.indices.push((0, 2, 1));
+    ceiling_mesh.indices.push((0, 3, 2));
+    let ceiling = Geometry::with_material(white_material.clone(), GeomInfo::MESH(ceiling_mesh));
 
-    let mut floor = Mesh::with_material(white_material.clone());
-    floor.verts.push((552.8, 0.0, 0.0));
-    floor.verts.push((0.0, 0.0, 0.0));
-    floor.verts.push((0.0, 0.0, 559.2));
-    floor.verts.push((549.6, 0.0, 559.2));
-    floor.indices.push((0, 1, 2));
-    floor.indices.push((0, 2, 3));
+    let mut floor_mesh = Mesh::default();
+    floor_mesh.verts.push((552.8, 0.0, 0.0));
+    floor_mesh.verts.push((0.0, 0.0, 0.0));
+    floor_mesh.verts.push((0.0, 0.0, 559.2));
+    floor_mesh.verts.push((549.6, 0.0, 559.2));
+    floor_mesh.indices.push((0, 1, 2));
+    floor_mesh.indices.push((0, 2, 3));
+    let floor = Geometry::with_material(white_material.clone(), GeomInfo::MESH(floor_mesh));
 
-    let mut back = Mesh::with_material(white_material.clone());
-    back.verts.push((0.0, 0.0, 559.2));
-    back.verts.push((549.6, 0.0, 559.2));
-    back.verts.push((556.0, 548.8, 559.2));
-    back.verts.push((0.0, 548.8, 559.2));
-    back.indices.push((2, 1, 0));
-    back.indices.push((3, 2, 0));
+    let mut back_mesh = Mesh::default();
+    back_mesh.verts.push((0.0, 0.0, 559.2));
+    back_mesh.verts.push((549.6, 0.0, 559.2));
+    back_mesh.verts.push((556.0, 548.8, 559.2));
+    back_mesh.verts.push((0.0, 548.8, 559.2));
+    back_mesh.indices.push((2, 1, 0));
+    back_mesh.indices.push((3, 2, 0));
+    let back = Geometry::with_material(white_material.clone(), GeomInfo::MESH(back_mesh));
 
-    let mut left = Mesh::with_material(green_material.clone());
-    left.verts.push((0.0, 0.0, 0.0));
-    left.verts.push((0., 0., 559.2));
-    left.verts.push((0., 548.8, 559.2));
-    left.verts.push((0., 548.8, 0.));
-    left.indices.push((0, 2, 1));
-    left.indices.push((0, 3, 2));
+    let mut left_mesh = Mesh::default();
+    left_mesh.verts.push((0.0, 0.0, 0.0));
+    left_mesh.verts.push((0., 0., 559.2));
+    left_mesh.verts.push((0., 548.8, 559.2));
+    left_mesh.verts.push((0., 548.8, 0.));
+    left_mesh.indices.push((0, 2, 1));
+    left_mesh.indices.push((0, 3, 2));
+    let left = Geometry::with_material(green_material.clone(), GeomInfo::MESH(left_mesh));
 
-    let mut right = Mesh::with_material(red_material.clone());
-    right.verts.push((552.8, 0.0, 0.));
-    right.verts.push((549.6, 0., 559.2));
-    right.verts.push((549.6, 548.8, 559.2));
-    right.verts.push((552.8, 548.8, 0.));
-    right.indices.push((0, 1, 2));
-    right.indices.push((0, 2, 3));
+    let mut right_mesh = Mesh::default();
+    right_mesh.verts.push((552.8, 0.0, 0.));
+    right_mesh.verts.push((549.6, 0., 559.2));
+    right_mesh.verts.push((549.6, 548.8, 559.2));
+    right_mesh.verts.push((552.8, 548.8, 0.));
+    right_mesh.indices.push((0, 1, 2));
+    right_mesh.indices.push((0, 2, 3));
+    let right = Geometry::with_material(red_material.clone(), GeomInfo::MESH(right_mesh));
 
-    let mut short_block_top = Mesh::with_material(orange_material.clone());
-    short_block_top.verts.push((130.0, 165.0, 65.0));
-    short_block_top.verts.push((82.0, 165.0, 225.0));
-    short_block_top.verts.push((240.0, 165.0, 272.0));
-    short_block_top.verts.push((290.0, 165.0, 114.0));
-    short_block_top.indices.push((0, 1, 2));
-    short_block_top.indices.push((0, 2, 3));
+    let mut short_block_top_mesh = Mesh::default();
+    short_block_top_mesh.verts.push((130.0, 165.0, 65.0));
+    short_block_top_mesh.verts.push((82.0, 165.0, 225.0));
+    short_block_top_mesh.verts.push((240.0, 165.0, 272.0));
+    short_block_top_mesh.verts.push((290.0, 165.0, 114.0));
+    short_block_top_mesh.indices.push((0, 1, 2));
+    short_block_top_mesh.indices.push((0, 2, 3));
+    let short_block_top = Geometry::with_material(
+        orange_material.clone(),
+        GeomInfo::MESH(short_block_top_mesh),
+    );
 
-    let mut short_block_bot = Mesh::with_material(orange_material.clone());
-    short_block_bot.verts.push((130.0, 0.01, 65.0));
-    short_block_bot.verts.push((82.0, 0.01, 225.0));
-    short_block_bot.verts.push((240.0, 0.01, 272.0));
-    short_block_bot.verts.push((290.0, 0.01, 114.0));
-    short_block_bot.indices.push((0, 1, 2));
-    short_block_bot.indices.push((0, 2, 3));
+    let mut short_block_bot_mesh = Mesh::default();
+    short_block_bot_mesh.verts.push((130.0, 0.01, 65.0));
+    short_block_bot_mesh.verts.push((82.0, 0.01, 225.0));
+    short_block_bot_mesh.verts.push((240.0, 0.01, 272.0));
+    short_block_bot_mesh.verts.push((290.0, 0.01, 114.0));
+    short_block_bot_mesh.indices.push((0, 1, 2));
+    short_block_bot_mesh.indices.push((0, 2, 3));
+    let short_block_bot = Geometry::with_material(
+        orange_material.clone(),
+        GeomInfo::MESH(short_block_bot_mesh),
+    );
 
-    let mut short_block_left = Mesh::with_material(orange_material.clone());
-    short_block_left.verts.push((290.0, 0.0, 114.0));
-    short_block_left.verts.push((290.0, 165.0, 114.0));
-    short_block_left.verts.push((240.0, 165.0, 272.0));
-    short_block_left.verts.push((240.0, 0.0, 272.0));
-    short_block_left.indices.push((0, 1, 2));
-    short_block_left.indices.push((0, 2, 3));
+    let mut short_block_left_mesh = Mesh::default();
+    short_block_left_mesh.verts.push((290.0, 0.0, 114.0));
+    short_block_left_mesh.verts.push((290.0, 165.0, 114.0));
+    short_block_left_mesh.verts.push((240.0, 165.0, 272.0));
+    short_block_left_mesh.verts.push((240.0, 0.0, 272.0));
+    short_block_left_mesh.indices.push((0, 1, 2));
+    short_block_left_mesh.indices.push((0, 2, 3));
+    let short_block_left = Geometry::with_material(
+        orange_material.clone(),
+        GeomInfo::MESH(short_block_left_mesh),
+    );
 
-    let mut short_block_back = Mesh::with_material(orange_material.clone());
-    short_block_back.verts.push((240.0, 0.0, 272.0));
-    short_block_back.verts.push((240.0, 165.0, 272.0));
-    short_block_back.verts.push((82.0, 165., 225.0));
-    short_block_back.verts.push((82.0, 0.0, 225.0));
-    short_block_back.indices.push((0, 1, 2));
-    short_block_back.indices.push((0, 2, 3));
+    let mut short_block_back_mesh = Mesh::default();
+    short_block_back_mesh.verts.push((240.0, 0.0, 272.0));
+    short_block_back_mesh.verts.push((240.0, 165.0, 272.0));
+    short_block_back_mesh.verts.push((82.0, 165., 225.0));
+    short_block_back_mesh.verts.push((82.0, 0.0, 225.0));
+    short_block_back_mesh.indices.push((0, 1, 2));
+    short_block_back_mesh.indices.push((0, 2, 3));
+    let short_block_back = Geometry::with_material(
+        orange_material.clone(),
+        GeomInfo::MESH(short_block_back_mesh),
+    );
 
-    let mut short_block_right = Mesh::with_material(orange_material.clone());
-    short_block_right.verts.push((82.0, 0.0, 225.0));
-    short_block_right.verts.push((82.0, 165.0, 225.0));
-    short_block_right.verts.push((130.0, 165.0, 65.0));
-    short_block_right.verts.push((130.0, 0.0, 65.0));
-    short_block_right.indices.push((0, 1, 2));
-    short_block_right.indices.push((0, 2, 3));
+    let mut short_block_right_mesh = Mesh::default();
+    short_block_right_mesh.verts.push((82.0, 0.0, 225.0));
+    short_block_right_mesh.verts.push((82.0, 165.0, 225.0));
+    short_block_right_mesh.verts.push((130.0, 165.0, 65.0));
+    short_block_right_mesh.verts.push((130.0, 0.0, 65.0));
+    short_block_right_mesh.indices.push((0, 1, 2));
+    short_block_right_mesh.indices.push((0, 2, 3));
+    let short_block_right = Geometry::with_material(
+        orange_material.clone(),
+        GeomInfo::MESH(short_block_right_mesh),
+    );
 
-    let mut short_block_front = Mesh::with_material(orange_material.clone());
-    short_block_front.verts.push((130.0, 0.0, 65.0));
-    short_block_front.verts.push((130.0, 165.0, 65.0));
-    short_block_front.verts.push((290.0, 165.0, 114.0));
-    short_block_front.verts.push((290.0, 0.0, 114.0));
-    short_block_front.indices.push((0, 1, 2));
-    short_block_front.indices.push((0, 2, 3));
+    let mut short_block_front_mesh = Mesh::default();
+    short_block_front_mesh.verts.push((130.0, 0.0, 65.0));
+    short_block_front_mesh.verts.push((130.0, 165.0, 65.0));
+    short_block_front_mesh.verts.push((290.0, 165.0, 114.0));
+    short_block_front_mesh.verts.push((290.0, 0.0, 114.0));
+    short_block_front_mesh.indices.push((0, 1, 2));
+    short_block_front_mesh.indices.push((0, 2, 3));
+    let short_block_front = Geometry::with_material(
+        orange_material.clone(),
+        GeomInfo::MESH(short_block_front_mesh),
+    );
 
-    let mut tall_block_top = Mesh::with_material(blue_material.clone());
-    tall_block_top.verts.push((423.0, 330.0, 247.0));
-    tall_block_top.verts.push((265.0, 330.0, 296.0));
-    tall_block_top.verts.push((314.0, 330.0, 456.0));
-    tall_block_top.verts.push((472.0, 330.0, 406.0));
-    tall_block_top.indices.push((0, 1, 2));
-    tall_block_top.indices.push((0, 2, 3));
+    let mut tall_block_top_mesh = Mesh::default();
+    tall_block_top_mesh.verts.push((423.0, 330.0, 247.0));
+    tall_block_top_mesh.verts.push((265.0, 330.0, 296.0));
+    tall_block_top_mesh.verts.push((314.0, 330.0, 456.0));
+    tall_block_top_mesh.verts.push((472.0, 330.0, 406.0));
+    tall_block_top_mesh.indices.push((0, 1, 2));
+    tall_block_top_mesh.indices.push((0, 2, 3));
+    let tall_block_top =
+        Geometry::with_material(blue_material.clone(), GeomInfo::MESH(tall_block_top_mesh));
 
-    let mut tall_block_bot = Mesh::with_material(blue_material.clone());
-    tall_block_bot.verts.push((423.0, 0.1, 247.0));
-    tall_block_bot.verts.push((265.0, 0.1, 296.0));
-    tall_block_bot.verts.push((314.0, 0.1, 456.0));
-    tall_block_bot.verts.push((472.0, 0.1, 406.0));
-    tall_block_bot.indices.push((0, 1, 2));
-    tall_block_bot.indices.push((0, 2, 3));
+    let mut tall_block_bot_mesh = Mesh::default();
+    tall_block_bot_mesh.verts.push((423.0, 0.1, 247.0));
+    tall_block_bot_mesh.verts.push((265.0, 0.1, 296.0));
+    tall_block_bot_mesh.verts.push((314.0, 0.1, 456.0));
+    tall_block_bot_mesh.verts.push((472.0, 0.1, 406.0));
+    tall_block_bot_mesh.indices.push((0, 1, 2));
+    tall_block_bot_mesh.indices.push((0, 2, 3));
+    let tall_block_bot =
+        Geometry::with_material(blue_material.clone(), GeomInfo::MESH(tall_block_bot_mesh));
 
-    let mut tall_block_left = Mesh::with_material(blue_material.clone());
-    tall_block_left.verts.push((423.0, 0.0, 247.0));
-    tall_block_left.verts.push((423.0, 330.0, 247.0));
-    tall_block_left.verts.push((472.0, 330.0, 406.0));
-    tall_block_left.verts.push((472.0, 0.0, 406.0));
-    tall_block_left.indices.push((0, 1, 2));
-    tall_block_left.indices.push((0, 2, 3));
+    let mut tall_block_left_mesh = Mesh::default();
+    tall_block_left_mesh.verts.push((423.0, 0.0, 247.0));
+    tall_block_left_mesh.verts.push((423.0, 330.0, 247.0));
+    tall_block_left_mesh.verts.push((472.0, 330.0, 406.0));
+    tall_block_left_mesh.verts.push((472.0, 0.0, 406.0));
+    tall_block_left_mesh.indices.push((0, 1, 2));
+    tall_block_left_mesh.indices.push((0, 2, 3));
+    let tall_block_left =
+        Geometry::with_material(blue_material.clone(), GeomInfo::MESH(tall_block_left_mesh));
 
-    let mut tall_block_back = Mesh::with_material(blue_material.clone());
-    tall_block_back.verts.push((472.0, 330.0, 406.0));
-    tall_block_back.verts.push((472.0, 330.0, 406.0));
-    tall_block_back.verts.push((314.0, 330.0, 456.0));
-    tall_block_back.verts.push((314.0, 0.0, 406.0));
-    tall_block_back.indices.push((0, 1, 2));
-    tall_block_back.indices.push((0, 2, 3));
+    let mut tall_block_back_mesh = Mesh::default();
+    tall_block_back_mesh.verts.push((472.0, 330.0, 406.0));
+    tall_block_back_mesh.verts.push((472.0, 330.0, 406.0));
+    tall_block_back_mesh.verts.push((314.0, 330.0, 456.0));
+    tall_block_back_mesh.verts.push((314.0, 0.0, 406.0));
+    tall_block_back_mesh.indices.push((0, 1, 2));
+    tall_block_back_mesh.indices.push((0, 2, 3));
+    let tall_block_back =
+        Geometry::with_material(blue_material.clone(), GeomInfo::MESH(tall_block_back_mesh));
 
-    let mut tall_block_right = Mesh::with_material(blue_material.clone());
-    tall_block_right.verts.push((314.0, 0.0, 456.0));
-    tall_block_right.verts.push((314.0, 330.0, 456.0));
-    tall_block_right.verts.push((265.0, 330.0, 296.0));
-    tall_block_right.verts.push((265.0, 0.0, 296.0));
-    tall_block_right.indices.push((0, 1, 2));
-    tall_block_right.indices.push((0, 2, 3));
+    let mut tall_block_right_mesh = Mesh::default();
+    tall_block_right_mesh.verts.push((314.0, 0.0, 456.0));
+    tall_block_right_mesh.verts.push((314.0, 330.0, 456.0));
+    tall_block_right_mesh.verts.push((265.0, 330.0, 296.0));
+    tall_block_right_mesh.verts.push((265.0, 0.0, 296.0));
+    tall_block_right_mesh.indices.push((0, 1, 2));
+    tall_block_right_mesh.indices.push((0, 2, 3));
+    let tall_block_right =
+        Geometry::with_material(blue_material.clone(), GeomInfo::MESH(tall_block_right_mesh));
 
-    let mut tall_block_front = Mesh::with_material(blue_material.clone());
-    tall_block_front.verts.push((265.0, 0.0, 296.0));
-    tall_block_front.verts.push((265.0, 330.0, 296.0));
-    tall_block_front.verts.push((423.0, 330.0, 247.0));
-    tall_block_front.verts.push((423.0, 0.0, 247.0));
-    tall_block_front.indices.push((0, 1, 2));
-    tall_block_front.indices.push((0, 2, 3));
+    let mut tall_block_front_mesh = Mesh::default();
+    tall_block_front_mesh.verts.push((265.0, 0.0, 296.0));
+    tall_block_front_mesh.verts.push((265.0, 330.0, 296.0));
+    tall_block_front_mesh.verts.push((423.0, 330.0, 247.0));
+    tall_block_front_mesh.verts.push((423.0, 0.0, 247.0));
+    tall_block_front_mesh.indices.push((0, 1, 2));
+    tall_block_front_mesh.indices.push((0, 2, 3));
+    let tall_block_front =
+        Geometry::with_material(blue_material.clone(), GeomInfo::MESH(tall_block_front_mesh));
 
-    let mut mirror = Mesh::with_material(mirror_material.clone());
-    mirror.verts.push((552.0, 50.0, 50.));
-    mirror.verts.push((549.0, 50.0, 509.2));
-    mirror.verts.push((549.0, 488.8, 509.2));
-    mirror.verts.push((552.0, 488.8, 50.0));
-    mirror.indices.push((0, 1, 2));
-    mirror.indices.push((0, 2, 3));
+    let mut mirror_mesh = Mesh::default();
+    mirror_mesh.verts.push((552.0, 50.0, 50.));
+    mirror_mesh.verts.push((549.0, 50.0, 509.2));
+    mirror_mesh.verts.push((549.0, 488.8, 509.2));
+    mirror_mesh.verts.push((552.0, 488.8, 50.0));
+    mirror_mesh.indices.push((0, 1, 2));
+    mirror_mesh.indices.push((0, 2, 3));
+    let mirror = Geometry::with_material(mirror_material.clone(), GeomInfo::MESH(mirror_mesh));
 
     let mut total = 0;
     let _ = meshes.attach(ceiling, &device, &mut scene)?;

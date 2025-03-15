@@ -50,13 +50,19 @@ fn main() -> anyhow::Result<()> {
         },
     )?;
 
-    let mut meshes = MeshStorage::default();
+    let mut geom = GeomStorage::default();
     let mut lights = LightStorage::default();
-    cornell_box(&mut meshes, &mut lights, &device, &mut scene)?;
+    cornell_box(&mut geom, &mut lights, &device, &mut scene)?;
 
     let mut commited_scene = scene.commit()?;
 
-    camera.render(&mut image, &mut commited_scene, &meshes, &lights, rays_per_pixel);
+    camera.render(
+        &mut image,
+        &mut commited_scene,
+        &geom,
+        &lights,
+        rays_per_pixel,
+    );
 
     let image: RgbImage = image.convert();
     image.save("MyImage.png").context("Error saving image")?;

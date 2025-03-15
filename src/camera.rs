@@ -130,7 +130,7 @@ impl Camera {
         &self,
         ray: RTCRay,
         scene: &CommittedScene<'_>,
-        meshes: &MeshStorage,
+        geom: &GeomStorage,
         lights: &LightStorage,
         depth: u32,
     ) -> LinearRgba {
@@ -141,8 +141,8 @@ impl Camera {
         match scene.intersect_1(ray).unwrap() {
             Some(hit) => {
                 let mut color = LinearRgba::BLACK;
-                let mesh: &Mesh = meshes.get(hit.hit.geomID).unwrap();
-                let material = &mesh.material;
+                let geometry: &Geometry = geom.get(hit.hit.geomID).unwrap();
+                let material = &geometry.material;
 
                 // if material.is_light {
                 //     return material.emissive
@@ -162,7 +162,7 @@ impl Camera {
                     let spec = material.specular;
                     if spec.red > 0.0 || spec.green > 0.0 || spec.blue > 0.0 {
                         color += self.specular_reflection(
-                            hit_pos, dir, normal, material, depth, scene, meshes, lights,
+                            hit_pos, dir, normal, material, depth, scene, geom, lights,
                         );
                     }
                 }
@@ -179,7 +179,7 @@ impl Camera {
         x: u32,
         y: u32,
         scene: &CommittedScene<'_>,
-        meshes: &MeshStorage,
+        geom: &GeomStorage,
         lights: &LightStorage,
         spp: u32,
     ) -> LinearRgba {
@@ -189,7 +189,7 @@ impl Camera {
         for _ in 0..spp {
             let ray = self.generate_ray(x, y, Some((fastrand::f32(), fastrand::f32())));
 
-            base_color += self.trace(ray, scene, meshes, lights, 0) * sppf;
+            base_color += self.trace(ray, scene, geom, lights, 0) * sppf;
         }
 
         base_color
@@ -199,14 +199,14 @@ impl Camera {
         &self,
         image: &mut Rgb32FImage,
         scene: &CommittedScene<'_>,
-        meshes: &MeshStorage,
+        geom: &GeomStorage,
         lights: &LightStorage,
         spp: u32,
     ) {
         // TODO: paralelize this. image access causes problems
         for y in 0..self.h {
             for x in 0..self.w {
-                let color = self.render_pixel(x, y, scene, meshes, lights, spp);
+                let color = self.render_pixel(x, y, scene, geom, lights, spp);
                 *image.get_pixel_mut(x, y) = Rgb::<f32>([color.red, color.green, color.blue]);
             }
         }
@@ -311,7 +311,7 @@ impl Camera {
         material: &Material,
         depth: u32,
         scene: &CommittedScene<'_>,
-        meshes: &MeshStorage,
+        geom: &GeomStorage,
         lights: &LightStorage,
     ) -> LinearRgba {
         let rdir = dir.reflect(normal);
@@ -334,7 +334,7 @@ impl Camera {
             ..default()
         };
 
-        let color = self.trace(new_ray, scene, meshes, lights, depth + 1);
+        let color = self.trace(new_ray, scene, geom, lights, depth + 1);
 
         LinearRgba::rgb(
             material.specular.red * color.red,
