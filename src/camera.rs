@@ -154,22 +154,21 @@ impl Camera {
                 let normal = Vec3::new(hit.hit.Ng_x, hit.hit.Ng_y, hit.hit.Ng_z).normalize();
                 // // println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
                 let hit_pos = origin + dir * hit.ray.tfar;
+                let refraction = f32::from_bits(hit.ray.id);
 
                 color += self.direct_lighting(hit_pos, normal, &material, lights, scene);
 
-                // TODO: I just ported over the depth checks. aren't they inneficient??????
                 if depth < DEPTH {
                     let spec = material.specular;
                     if spec.red > 0.0 || spec.green > 0.0 || spec.blue > 0.0 {
                         color += self.specular_reflection(
-                            hit_pos, dir, normal, material, depth, scene, geom, lights,
+                            hit_pos, dir, normal, refraction, material, depth, scene, geom, lights,
                         );
                     }
 
                     let transmission = material.transmission;
                     if transmission.red > 0.0 || transmission.green > 0.0 || transmission.blue > 0.0
                     {
-                        let refraction = f32::from_bits(hit.ray.id);
                         color += self.specular_transmission(
                             hit_pos, dir, normal, refraction, material, depth, scene, geom, lights,
                         );
@@ -317,6 +316,7 @@ impl Camera {
         hit: Vec3,
         dir: Vec3,
         normal: Vec3,
+        ray_refraction: f32,
         material: &Material,
         depth: u32,
         scene: &CommittedScene<'_>,
@@ -334,7 +334,7 @@ impl Camera {
         // println!("ray originating at {} with dir {} reflected with dir {} and pos {}", origin, dir, rdir, rorign);
 
         let info = RayInfo {
-            refraction: material.refraction,
+            refraction: ray_refraction, // the medium did not change
         };
 
         let new_ray = RTCRay {
@@ -388,6 +388,7 @@ impl Camera {
         };
 
         let info = if cannot_refract {
+            // reflected, so it stays in the same medium
             RayInfo {
                 refraction: ray_refraction,
             }
@@ -397,8 +398,9 @@ impl Camera {
             }
         };
 
-        let mut offset = EPSILON * normal;
-        if refdir.dot(normal) < 0.0 {
+        let inv_normal = -normal;
+        let mut offset = EPSILON * inv_normal;
+        if refdir.dot(inv_normal) < 0.0 {
             offset *= -1.0;
         }
         let origin = hit + offset;
