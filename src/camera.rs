@@ -23,11 +23,13 @@ pub struct Camera {
     pub background: LinearRgba,
 }
 
-// pub struct RayInfo {
-//     pub x: u32,
-//     pub y: u32,
-//     pub depth: u32,
-// }
+// the rays need to know the refraction index of where they start
+// I use the 32 bits of the id to encode this information
+// WARNING: if more information is needed in the future, this will no longer have enough space
+// will probably need to use the id to index into some data structure
+pub struct RayInfo {
+    pub refraction: f32,
+}
 
 const DEPTH: u32 = 3;
 const EPSILON: f32 = 1e-3;
@@ -103,6 +105,8 @@ impl Camera {
             self.pixel00_loc + (pc.x * self.pixel_delta_u) + (pc.y * self.pixel_delta_v);
         let dir = (pixel_sample - self.pos).normalize();
 
+        let info = RayInfo { refraction: 1.0 };
+
         // Ray::new(self.pos, dir, LinearRgba::BLACK, x, y, 1.0)
         RTCRay {
             org_x: self.pos.x,
@@ -111,7 +115,7 @@ impl Camera {
             dir_x: dir.x,
             dir_y: dir.y,
             dir_z: dir.z,
-            // id,
+            id: info.refraction.to_bits(),
             // time: 10000000000.0,
             ..default()
         }
@@ -159,6 +163,15 @@ impl Camera {
                     if spec.red > 0.0 || spec.green > 0.0 || spec.blue > 0.0 {
                         color += self.specular_reflection(
                             hit_pos, dir, normal, material, depth, scene, geom, lights,
+                        );
+                    }
+
+                    let transmission = material.transmission;
+                    if transmission.red > 0.0 || transmission.green > 0.0 || transmission.blue > 0.0
+                    {
+                        let refraction = f32::from_bits(hit.ray.id);
+                        color += self.specular_transmission(
+                            hit_pos, dir, normal, refraction, material, depth, scene, geom, lights,
                         );
                     }
                 }
@@ -320,6 +333,10 @@ impl Camera {
 
         // println!("ray originating at {} with dir {} reflected with dir {} and pos {}", origin, dir, rdir, rorign);
 
+        let info = RayInfo {
+            refraction: material.refraction,
+        };
+
         let new_ray = RTCRay {
             org_x: rorign.x,
             org_y: rorign.y,
@@ -327,6 +344,7 @@ impl Camera {
             dir_x: rdir.x,
             dir_y: rdir.y,
             dir_z: rdir.z,
+            id: info.refraction.to_bits(),
             ..default()
         };
 
@@ -336,6 +354,72 @@ impl Camera {
             material.specular.red * color.red,
             material.specular.green * color.green,
             material.specular.blue * color.blue,
+        )
+    }
+
+    // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
+    // TODO cleanup
+    pub fn specular_transmission(
+        &self,
+        hit: Vec3,
+        dir: Vec3,
+        normal: Vec3,
+        ray_refraction: f32,
+        material: &Material,
+        depth: u32,
+        scene: &CommittedScene<'_>,
+        geom: &GeomStorage,
+        lights: &LightStorage,
+    ) -> LinearRgba {
+        let ior = ray_refraction / material.refraction;
+        // let inv_dir = -1.0 * dir;
+
+        let cos_theta = normal.dot(dir).min(1.0);
+        let sin_theta = (1.0 - (cos_theta * cos_theta)).sqrt(); // f64??
+
+        // is there total internal reflection ?
+        let cannot_refract: bool = ior * sin_theta > 1.0;
+
+        // CUIDADO, CONSIDERAR INV_DIR
+        let refdir = if cannot_refract {
+            dir.reflect(normal) // CUIDADO, REFLECT
+        } else {
+            dir.refract(normal, ior)
+        };
+
+        let info = if cannot_refract {
+            RayInfo {
+                refraction: ray_refraction,
+            }
+        } else {
+            RayInfo {
+                refraction: material.refraction,
+            }
+        };
+
+        let mut offset = EPSILON * normal;
+        if refdir.dot(normal) < 0.0 {
+            offset *= -1.0;
+        }
+        let origin = hit + offset;
+
+        let refraction_ray = RTCRay {
+            org_x: origin.x,
+            org_y: origin.y,
+            org_z: origin.z,
+            dir_x: refdir.x,
+            dir_y: refdir.y,
+            dir_z: refdir.z,
+            id: info.refraction.to_bits(),
+            ..default()
+        };
+
+        let color = self.trace(refraction_ray, scene, geom, lights, depth + 1);
+
+        LinearRgba::rgb(
+            material.transmission.red * color.red,
+            material.transmission.green * color.green,
+            material.transmission.blue * color.blue,
         )
     }
 }

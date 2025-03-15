@@ -5,7 +5,7 @@ use anyhow::Result;
 use bevy_color::LinearRgba;
 use embree4_rs::{
     Device, Scene,
-    geometry::{SphereGeometry, TriangleMeshGeometry, UserGeometry},
+    geometry::{SphereGeometry, TriangleMeshGeometry},
 };
 use glam::*;
 

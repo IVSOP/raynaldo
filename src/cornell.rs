@@ -251,7 +251,7 @@ pub fn cornell_box(
         radius: 110.0,
         center: Vec3::new(160.0, 320.0, 225.0),
     };
-    let sphere_geometry = Geometry::with_material(red_material.clone(), GeomInfo::SPHERE(sphere));
+    let sphere_geometry = Geometry::with_material(glass_material.clone(), GeomInfo::SPHERE(sphere));
 
     let mut total = 0;
     let _ = meshes.attach(ceiling, &device, &mut scene)?;
