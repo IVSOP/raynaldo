@@ -41,6 +41,8 @@ pub struct Material {
     pub specular: LinearRgba,
     pub transmission: LinearRgba,
     pub refraction: f32,
+    pub reflectivity: f32,
+    // pub transparency: f32,
 }
 
 impl Default for Material {
@@ -51,6 +53,8 @@ impl Default for Material {
             specular: LinearRgba::RED,
             transmission: LinearRgba::RED,
             refraction: 1.0,
+            reflectivity: 0.0,
+            // transparency: 0.0,
         }
     }
 }

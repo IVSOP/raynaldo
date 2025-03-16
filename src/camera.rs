@@ -1,5 +1,6 @@
 use crate::common::*;
 use crate::geometry::*;
+use bevy_color::Gray;
 use bevy_color::LinearRgba;
 use embree4_rs::*;
 use embree4_sys::RTCRay;
@@ -33,6 +34,7 @@ pub struct RayInfo {
 
 const DEPTH: u32 = 6;
 const EPSILON: f32 = 1e-3;
+const AIR_REFRACT: f32 = 1.00029;
 
 impl Camera {
     pub fn new(pos: Vec3, at_point: Vec3, up: Vec3, w_u32: u32, h_u32: u32, h_fov: f32) -> Self {
@@ -105,7 +107,9 @@ impl Camera {
             self.pixel00_loc + (pc.x * self.pixel_delta_u) + (pc.y * self.pixel_delta_v);
         let dir = (pixel_sample - self.pos).normalize();
 
-        let info = RayInfo { refraction: 1.0 };
+        let info = RayInfo {
+            refraction: AIR_REFRACT,
+        };
 
         // Ray::new(self.pos, dir, LinearRgba::BLACK, x, y, 1.0)
         RTCRay {
@@ -158,22 +162,23 @@ impl Camera {
 
                 color += self.direct_lighting(hit_pos, normal, &material, lights, scene);
 
-                if depth < DEPTH {
-                    let spec = material.specular;
-                    if spec.red > 0.0 || spec.green > 0.0 || spec.blue > 0.0 {
-                        color += self.specular_reflection(
-                            hit_pos, dir, normal, refraction, material, depth, scene, geom, lights,
-                        );
-                    }
+                color += self.reflect_refract(
+                    hit_pos, dir, normal, refraction, material, depth, scene, geom, lights,
+                );
+                // let spec = material.specular;
+                // if spec.red > 0.0 || spec.green > 0.0 || spec.blue > 0.0 {
+                //     color += self.specular_reflection(
+                //         hit_pos, dir, normal, refraction, material, depth, scene, geom, lights,
+                //     );
+                // }
 
-                    let transmission = material.transmission;
-                    if transmission.red > 0.0 || transmission.green > 0.0 || transmission.blue > 0.0
-                    {
-                        color += self.specular_transmission(
-                            hit_pos, dir, normal, refraction, material, depth, scene, geom, lights,
-                        );
-                    }
-                }
+                // let transmission = material.transmission;
+                // if transmission.red > 0.0 || transmission.green > 0.0 || transmission.blue > 0.0
+                // {
+                //     color += self.specular_transmission(
+                //         hit_pos, dir, normal, refraction, material, depth, scene, geom, lights,
+                //     );
+                // }
 
                 // material.color
                 color
@@ -310,59 +315,158 @@ impl Camera {
         color
     }
 
-    // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
-    pub fn specular_reflection(
+    // // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
+    // pub fn specular_reflection(
+    //     &self,
+    //     hit: Vec3,
+    //     dir: Vec3,
+    //     normal: Vec3,
+    //     ray_refraction: f32,
+    //     material: &Material,
+    //     depth: u32,
+    //     scene: &CommittedScene<'_>,
+    //     geom: &GeomStorage,
+    //     lights: &LightStorage,
+    // ) -> LinearRgba {
+    //     let rdir = dir.reflect(normal);
+
+    //     let mut offset = EPSILON * normal;
+    //     if rdir.dot(normal) < 0.0 {
+    //         offset *= -1.0;
+    //     }
+    //     let rorign = hit + offset;
+
+    //     // println!("ray originating at {} with dir {} reflected with dir {} and pos {}", origin, dir, rdir, rorign);
+
+    //     let info = RayInfo {
+    //         refraction: ray_refraction, // the medium did not change
+    //     };
+
+    //     let new_ray = RTCRay {
+    //         org_x: rorign.x,
+    //         org_y: rorign.y,
+    //         org_z: rorign.z,
+    //         dir_x: rdir.x,
+    //         dir_y: rdir.y,
+    //         dir_z: rdir.z,
+    //         id: info.refraction.to_bits(),
+    //         ..default()
+    //     };
+
+    //     let color = self.trace(new_ray, scene, geom, lights, depth + 1);
+
+    //     LinearRgba::rgb(
+    //         material.specular.red * color.red,
+    //         material.specular.green * color.green,
+    //         material.specular.blue * color.blue,
+    //     )
+    // }
+
+    // // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
+    // // TODO cleanup
+    // pub fn specular_transmission(
+    //     &self,
+    //     hit: Vec3,
+    //     dir: Vec3,
+    //     normal: Vec3,
+    //     ray_refraction: f32,
+    //     material: &Material,
+    //     depth: u32,
+    //     scene: &CommittedScene<'_>,
+    //     geom: &GeomStorage,
+    //     lights: &LightStorage,
+    // ) -> LinearRgba {
+
+    //     let material_refraction: f32;
+    //     if ray_refraction == 1.0 {
+    //         material_refraction = material.refraction;
+    //     } else {
+    //         material_refraction = 1.0;
+    //     }
+
+    //     let ior = ray_refraction / material_refraction;
+
+    //     let cos_theta = normal.dot(dir).min(1.0);
+    //     let sin_theta = (1.0 - (cos_theta * cos_theta)).sqrt(); // f64??
+
+    //     // is there total internal reflection ?
+    //     let cannot_refract: bool = ior * sin_theta > 1.0;
+
+    //     let refdir = if cannot_refract {
+    //         dir.reflect(normal).normalize()
+    //     } else {
+    //         dir.refract(normal, ior).normalize()
+    //     };
+
+    //     let info = if cannot_refract {
+    //         // reflected, so it stays in the same medium
+    //         RayInfo {
+    //             refraction: ray_refraction,
+    //         }
+    //     } else {
+    //         RayInfo {
+    //             refraction: material_refraction,
+    //         }
+    //     };
+
+    //     let inv_normal = -normal;
+    //     let mut offset = EPSILON * inv_normal;
+    //     if refdir.dot(inv_normal) < 0.0 {
+    //         offset *= -1.0;
+    //     }
+    //     let origin = hit + offset;
+
+    //     let refraction_ray = RTCRay {
+    //         org_x: origin.x,
+    //         org_y: origin.y,
+    //         org_z: origin.z,
+    //         dir_x: refdir.x,
+    //         dir_y: refdir.y,
+    //         dir_z: refdir.z,
+    //         id: info.refraction.to_bits(),
+    //         ..default()
+    //     };
+
+    //     let color = self.trace(refraction_ray, scene, geom, lights, depth + 1);
+
+    //     LinearRgba::rgb(
+    //         material.transmission.red * color.red,
+    //         material.transmission.green * color.green,
+    //         material.transmission.blue * color.blue,
+    //     )
+    // }
+
+    pub fn compute_reflection_coeff(
         &self,
-        hit: Vec3,
-        dir: Vec3,
+        incident_dir: Vec3,
         normal: Vec3,
-        ray_refraction: f32,
+        n1: f32, // refraction being left
+        n2: f32, // refraction being entered
         material: &Material,
-        depth: u32,
-        scene: &CommittedScene<'_>,
-        geom: &GeomStorage,
-        lights: &LightStorage,
-    ) -> LinearRgba {
-        let rdir = dir.reflect(normal);
-
-        let mut offset = EPSILON * normal;
-        if rdir.dot(normal) < 0.0 {
-            offset *= -1.0;
+    ) -> f32 {
+        // Schlick aproximation
+        let mut r0 = (n1 - n2) / (n1 + n2);
+        r0 *= r0;
+        let mut cos_x = -normal.dot(incident_dir);
+        if n1 > n2 {
+            let n = n1 / n2;
+            let sin_t2 = n * n * (1.0 - cos_x * cos_x);
+            // Total internal reflection
+            if sin_t2 > 1.0 {
+                return 1.0;
+            }
+            cos_x = (1.0 - sin_t2).sqrt();
         }
-        let rorign = hit + offset;
+        let x = 1.0 - cos_x;
+        let ret = r0 + (1.0 - r0) * x * x * x * x * x;
 
-        // println!("ray originating at {} with dir {} reflected with dir {} and pos {}", origin, dir, rdir, rorign);
-
-        let info = RayInfo {
-            refraction: ray_refraction, // the medium did not change
-        };
-
-        let new_ray = RTCRay {
-            org_x: rorign.x,
-            org_y: rorign.y,
-            org_z: rorign.z,
-            dir_x: rdir.x,
-            dir_y: rdir.y,
-            dir_z: rdir.z,
-            id: info.refraction.to_bits(),
-            ..default()
-        };
-
-        let color = self.trace(new_ray, scene, geom, lights, depth + 1);
-
-        LinearRgba::rgb(
-            material.specular.red * color.red,
-            material.specular.green * color.green,
-            material.specular.blue * color.blue,
-        )
+        material.reflectivity + (1.0 - material.reflectivity) * ret
     }
 
-    // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
-    // TODO cleanup
-    pub fn specular_transmission(
+    pub fn reflect_refract(
         &self,
         hit: Vec3,
-        dir: Vec3,
+        incident_dir: Vec3,
         normal: Vec3,
         ray_refraction: f32,
         material: &Material,
@@ -371,63 +475,55 @@ impl Camera {
         geom: &GeomStorage,
         lights: &LightStorage,
     ) -> LinearRgba {
+        // n1 is refraction being left
+        // n2 is refraction being entered
 
-        let material_refraction: f32;
-        if ray_refraction == 1.0 {
-            material_refraction = material.refraction;
+        let n1: f32;
+        let n2: f32;
+
+        if ray_refraction == AIR_REFRACT {
+            // ray is coming from outside, entering
+            n1 = AIR_REFRACT;
+            n2 = material.refraction;
         } else {
-            material_refraction = 1.0;
+            // ray is leaving
+            n1 = material.refraction;
+            n2 = AIR_REFRACT;
         }
 
-        let ior = ray_refraction / material_refraction;
+        let reflectivity = self.compute_reflection_coeff(incident_dir, normal, n1, n2, material);
 
-        let cos_theta = normal.dot(dir).min(1.0);
-        let sin_theta = (1.0 - (cos_theta * cos_theta)).sqrt(); // f64??
+        if reflectivity > 0.0 {
+            let refdir = incident_dir.reflect(normal);
 
-        // is there total internal reflection ?
-        let cannot_refract: bool = ior * sin_theta > 1.0;
-
-        let refdir = if cannot_refract {
-            dir.reflect(normal).normalize()
-        } else {
-            dir.refract(normal, ior).normalize()
-        };
-
-        let info = if cannot_refract {
-            // reflected, so it stays in the same medium
-            RayInfo {
-                refraction: ray_refraction,
+            let mut offset = EPSILON * normal;
+            if refdir.dot(normal) < 0.0 {
+                offset *= -1.0;
             }
-        } else {
-            RayInfo {
-                refraction: material_refraction,
-            }
-        };
+            let origin = hit + offset;
 
-        let inv_normal = -normal;
-        let mut offset = EPSILON * inv_normal;
-        if refdir.dot(inv_normal) < 0.0 {
-            offset *= -1.0;
+            let refraction = n1; // medium did not change
+
+            let reflection_ray = RTCRay {
+                org_x: origin.x,
+                org_y: origin.y,
+                org_z: origin.z,
+                dir_x: refdir.x,
+                dir_y: refdir.y,
+                dir_z: refdir.z,
+                id: refraction.to_bits(),
+                ..default()
+            };
+
+            let color = self.trace(reflection_ray, scene, geom, lights, depth + 1);
+
+            LinearRgba::rgb(
+                material.specular.red * color.red,
+                material.specular.green * color.green,
+                material.specular.blue * color.blue,
+            ) * reflectivity
+        } else {
+            LinearRgba::BLACK
         }
-        let origin = hit + offset;
-
-        let refraction_ray = RTCRay {
-            org_x: origin.x,
-            org_y: origin.y,
-            org_z: origin.z,
-            dir_x: refdir.x,
-            dir_y: refdir.y,
-            dir_z: refdir.z,
-            id: info.refraction.to_bits(),
-            ..default()
-        };
-
-        let color = self.trace(refraction_ray, scene, geom, lights, depth + 1);
-
-        LinearRgba::rgb(
-            material.transmission.red * color.red,
-            material.transmission.green * color.green,
-            material.transmission.blue * color.blue,
-        )
     }
 }

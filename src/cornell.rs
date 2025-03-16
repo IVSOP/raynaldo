@@ -51,14 +51,16 @@ pub fn cornell_box(
         diffuse: LinearRgba::BLACK,
         specular: LinearRgba::rgb(0.9, 0.9, 0.9),
         transmission: LinearRgba::BLACK,
-        ..default()
+        refraction: 1.5,
+        reflectivity: 1.0,
     };
     let glass_material = Material {
-        color: LinearRgba::BLACK,
+        color: LinearRgba::WHITE,
         diffuse: LinearRgba::BLACK,
-        specular: LinearRgba::rgb(0.2, 0.2, 0.2),
+        specular: LinearRgba::rgb(1.0, 1.0, 1.0),
         transmission: LinearRgba::rgb(0.9, 0.9, 0.9),
         refraction: 1.2,
+        reflectivity: 0.01,
     };
 
     let mut ceiling_mesh = Mesh::default();
