@@ -480,6 +480,8 @@ impl Camera {
         let n1: f32;
         let n2: f32;
 
+        // WARNING nao tenho como saber se o raio esta a sair ou entrar no material,
+        // nem qual o indice de refracao que devo usar ao sair, entao tive de fazer esta manhosice
         if ray_refraction == AIR_REFRACT {
             // ray is coming from outside, entering
             n1 = AIR_REFRACT;
