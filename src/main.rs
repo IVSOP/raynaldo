@@ -15,8 +15,8 @@ use camera::*;
 
 mod geometry;
 
-const W: u32 = 640;
-const H: u32 = 640;
+const W: u32 = 2560;
+const H: u32 = 1440;
 
 fn main() -> anyhow::Result<()> {
     let args: Vec<String> = env::args().collect();

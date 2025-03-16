@@ -13,3 +13,11 @@ glam = "0.30.0"
 image = "0.25.5"
 rand = "0.9.0"
 rayon = "1.10.0"
+
+[profile.release]
+lto = true
+opt-level = 3
+codegen-units = 1
+incremental = false
+debug = false
+strip = true

@@ -221,10 +221,11 @@ impl Camera {
         let image = Mutex::new(image);
         (0..self.h).into_par_iter().for_each(|y| {
             // wtf this is terrible
-            let mut image_slice: Vec::<Rgb::<f32>> = vec![Rgb::<f32>([0.0, 0.0, 0.0]); self.w as usize];
+            let mut image_slice: Vec<Rgb<f32>> = vec![Rgb::<f32>([0.0, 0.0, 0.0]); self.w as usize];
             for x in 0..self.w {
                 let color = self.render_pixel(x, y, scene, geom, lights, spp);
-                *image_slice.get_mut(x as usize).unwrap() = Rgb::<f32>([color.red, color.green, color.blue]);
+                *image_slice.get_mut(x as usize).unwrap() =
+                    Rgb::<f32>([color.red, color.green, color.blue]);
             }
 
             let mut img = image.lock().unwrap();
