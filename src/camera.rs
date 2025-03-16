@@ -36,6 +36,7 @@ pub struct RayInfo {
 const DEPTH: u32 = 4;
 const EPSILON: f32 = 1e-3;
 const AIR_REFRACT: f32 = 1.00029;
+const COMPARE_ALL_LIGHTS: bool = false;
 
 impl Camera {
     pub fn new(pos: Vec3, at_point: Vec3, up: Vec3, w_u32: u32, h_u32: u32, h_fov: f32) -> Self {
@@ -312,15 +313,29 @@ impl Camera {
     ) -> LinearRgba {
         let mut color = LinearRgba::BLACK;
 
-        // loop over all light sources
-        for light in lights.lights.iter() {
+        if COMPARE_ALL_LIGHTS {
+            // loop over all light sources
+            for light in lights.lights.iter() {
+                color += match light.light_type {
+                    LightType::AMBIENT => self.handle_ambient_light(material, light),
+                    LightType::POINT(light_pos) => {
+                        self.handle_point_light(material, light, hit_pos, normal, light_pos, scene)
+                    }
+                };
+            }
+        } else {
+            let light_i = fastrand::usize(..lights.lights.len());
+            let light = lights.lights.get(light_i).unwrap();
             color += match light.light_type {
                 LightType::AMBIENT => self.handle_ambient_light(material, light),
                 LightType::POINT(light_pos) => {
                     self.handle_point_light(material, light, hit_pos, normal, light_pos, scene)
                 }
-            }
+            };
+
+            color *= lights.lights.len() as f32;
         }
+
 
         color
     }
