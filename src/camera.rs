@@ -1,9 +1,9 @@
 use crate::common::*;
 use crate::geometry::*;
 use bevy_color::LinearRgba;
+use bevy_math::*;
 use embree4_rs::*;
 use embree4_sys::RTCRay;
-use bevy_math::*;
 use image::Rgb;
 use image::Rgb32FImage;
 use rayon::iter::*;

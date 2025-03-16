@@ -3,11 +3,11 @@ use std::collections::HashMap;
 // use crate::common::*;
 use anyhow::Result;
 use bevy_color::LinearRgba;
+use bevy_math::*;
 use embree4_rs::{
     Device, Scene,
     geometry::{SphereGeometry, TriangleMeshGeometry},
 };
-use bevy_math::*;
 
 #[derive(Clone)]
 pub struct Sphere {

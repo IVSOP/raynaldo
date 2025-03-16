@@ -2,14 +2,14 @@
 use crate::geometry::*;
 use anyhow::*;
 use bevy_color::LinearRgba;
-use embree4_rs::*;
 use bevy_math::*;
+use bevy_transform::components::*;
+use embree4_rs::*;
 use gltf::{
     // Gltf,
     // buffer::Data,
     mesh::util::*,
 };
-use bevy_transform::components::*;
 
 pub const WHITE_MATERIAL: Material = Material {
     color: LinearRgba::rgb(0.9, 0.9, 0.9),
@@ -366,7 +366,12 @@ pub fn add_gltf(
             let reader = primitive.reader(|buffer| Some(&gltf_buff[buffer.index()]));
             if let Some(iter) = reader.read_positions() {
                 for vertex_position in iter {
-                    let pos = Vec4::new(vertex_position[0], vertex_position[1], vertex_position[2], 1.0);
+                    let pos = Vec4::new(
+                        vertex_position[0],
+                        vertex_position[1],
+                        vertex_position[2],
+                        1.0,
+                    );
                     let transformed = matrix * pos;
                     verts.push((transformed.x, transformed.y, transformed.z));
                 }

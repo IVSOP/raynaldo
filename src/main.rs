@@ -1,9 +1,9 @@
 use anyhow::Context;
+use bevy_math::*;
 use bevy_transform::components::Transform;
 use cornell::*;
 use embree4_rs::*;
 use geometry::*;
-use bevy_math::*;
 use image::buffer::ConvertBuffer;
 use image::{Rgb32FImage, RgbImage};
 mod common;
@@ -15,8 +15,49 @@ use camera::*;
 
 mod geometry;
 
-const W: u32 = 640;
-const H: u32 = 640;
+const W: u32 = 2560;
+const H: u32 = 1440;
+
+// tonemapping todo grokado, queria usar o TonyMcMapFace mas nao faco a minima por onde comecar
+pub fn tonemap(image: &mut Rgb32FImage) {
+    for y in 0..H {
+        for x in 0..W {
+            let pixel = image.get_pixel_mut(x, y);
+            let r = pixel[0];
+            let g = pixel[1];
+            let b = pixel[2];
+
+            // Step 1: Compute luminance
+            let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+            // Step 2: Compress luminance
+            let compressed_luminance = luminance / (luminance + 1.0);
+
+            // Step 3: Helmholtz-Kohlrausch effect (simplified)
+            let saturation = if luminance > 0.0 {
+                let max_channel = r.max(g).max(b);
+                let min_channel = r.min(g).min(b);
+                (max_channel - min_channel) / max_channel
+            } else {
+                0.0
+            };
+            let hk_boost = 1.0 + 0.2 * saturation;
+            let adjusted_luminance = (compressed_luminance * hk_boost).clamp(0.0, 1.0);
+
+            // Step 4: Scale colors to preserve ratios
+            let scale = if luminance > 0.0 {
+                adjusted_luminance / luminance
+            } else {
+                1.0
+            };
+
+            // Update the pixel
+            pixel[0] = (r * scale).clamp(0.0, 1.0);
+            pixel[1] = (g * scale).clamp(0.0, 1.0);
+            pixel[2] = (b * scale).clamp(0.0, 1.0);
+        }
+    }
+}
 
 fn main() -> anyhow::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -60,8 +101,15 @@ fn main() -> anyhow::Result<()> {
         rotation: Quat::from_rotation_y(220.0_f32.to_radians()),
         scale: Vec3::splat(50.0),
     };
-    add_gltf(&mut geom, &device, &mut scene, &gltf_doc, &gltf_buff, &transform, MIRROR_MATERIAL)?;
-
+    add_gltf(
+        &mut geom,
+        &device,
+        &mut scene,
+        &gltf_doc,
+        &gltf_buff,
+        &transform,
+        GLASS_MATERIAL,
+    )?;
     let mut commited_scene = scene.commit()?;
 
     camera.render(
@@ -72,6 +120,7 @@ fn main() -> anyhow::Result<()> {
         rays_per_pixel,
     );
 
+    tonemap(&mut image);
     let image: RgbImage = image.convert();
     image.save("MyImage.png").context("Error saving image")?;
 
