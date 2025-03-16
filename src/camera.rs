@@ -31,7 +31,7 @@ pub struct RayInfo {
     pub refraction: f32,
 }
 
-const DEPTH: u32 = 3;
+const DEPTH: u32 = 6;
 const EPSILON: f32 = 1e-3;
 
 impl Camera {
@@ -138,7 +138,7 @@ impl Camera {
         lights: &LightStorage,
         depth: u32,
     ) -> LinearRgba {
-        if depth > 3 {
+        if depth > DEPTH {
             return self.background;
         }
 
@@ -371,8 +371,15 @@ impl Camera {
         geom: &GeomStorage,
         lights: &LightStorage,
     ) -> LinearRgba {
-        let ior = ray_refraction / material.refraction;
-        // let inv_dir = -1.0 * dir;
+
+        let material_refraction: f32;
+        if ray_refraction == 1.0 {
+            material_refraction = material.refraction;
+        } else {
+            material_refraction = 1.0;
+        }
+
+        let ior = ray_refraction / material_refraction;
 
         let cos_theta = normal.dot(dir).min(1.0);
         let sin_theta = (1.0 - (cos_theta * cos_theta)).sqrt(); // f64??
@@ -380,11 +387,10 @@ impl Camera {
         // is there total internal reflection ?
         let cannot_refract: bool = ior * sin_theta > 1.0;
 
-        // CUIDADO, CONSIDERAR INV_DIR
         let refdir = if cannot_refract {
-            dir.reflect(normal) // CUIDADO, REFLECT
+            dir.reflect(normal).normalize()
         } else {
-            dir.refract(normal, ior)
+            dir.refract(normal, ior).normalize()
         };
 
         let info = if cannot_refract {
@@ -394,7 +400,7 @@ impl Camera {
             }
         } else {
             RayInfo {
-                refraction: material.refraction,
+                refraction: material_refraction,
             }
         };
 
