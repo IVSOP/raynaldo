@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use glam::*;
+use bevy_math::*;
 use std::ops::RangeBounds;
 
 #[inline]

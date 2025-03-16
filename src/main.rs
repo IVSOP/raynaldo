@@ -1,13 +1,13 @@
 use anyhow::Context;
-use cornell::cornell_box;
+use bevy_transform::components::Transform;
+use cornell::*;
 use embree4_rs::*;
 use geometry::*;
-use glam::*;
+use bevy_math::*;
 use image::buffer::ConvertBuffer;
 use image::{Rgb32FImage, RgbImage};
 mod common;
 use std::env;
-
 mod cornell;
 
 mod camera;
@@ -15,8 +15,8 @@ use camera::*;
 
 mod geometry;
 
-const W: u32 = 2560;
-const H: u32 = 1440;
+const W: u32 = 640;
+const H: u32 = 640;
 
 fn main() -> anyhow::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -53,6 +53,14 @@ fn main() -> anyhow::Result<()> {
     let mut geom = GeomStorage::default();
     let mut lights = LightStorage::default();
     cornell_box(&mut geom, &mut lights, &device, &mut scene)?;
+
+    let (gltf_doc, gltf_buff, _) = gltf::import("assets/magujo/suzanne.glb")?;
+    let transform = Transform {
+        translation: Vec3::new(450.0, 50.0, 150.0),
+        rotation: Quat::from_rotation_y(220.0_f32.to_radians()),
+        scale: Vec3::splat(50.0),
+    };
+    add_gltf(&mut geom, &device, &mut scene, &gltf_doc, &gltf_buff, &transform, MIRROR_MATERIAL)?;
 
     let mut commited_scene = scene.commit()?;
 

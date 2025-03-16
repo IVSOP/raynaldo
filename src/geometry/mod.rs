@@ -7,7 +7,7 @@ use embree4_rs::{
     Device, Scene,
     geometry::{SphereGeometry, TriangleMeshGeometry},
 };
-use glam::*;
+use bevy_math::*;
 
 #[derive(Clone)]
 pub struct Sphere {
