@@ -6,6 +6,8 @@ use embree4_sys::RTCRay;
 use glam::*;
 use image::Rgb;
 use image::Rgb32FImage;
+use rayon::iter::*;
+use std::sync::Mutex;
 
 #[derive(Debug)]
 pub struct Camera {
@@ -31,7 +33,7 @@ pub struct RayInfo {
     pub refraction: f32,
 }
 
-const DEPTH: u32 = 6;
+const DEPTH: u32 = 4;
 const EPSILON: f32 = 1e-3;
 const AIR_REFRACT: f32 = 1.00029;
 
@@ -215,13 +217,21 @@ impl Camera {
         lights: &LightStorage,
         spp: u32,
     ) {
-        // TODO: paralelize this. image access causes problems
-        for y in 0..self.h {
+        // TODO: add more unsafe to be faster
+        let image = Mutex::new(image);
+        (0..self.h).into_par_iter().for_each(|y| {
+            // wtf this is terrible
+            let mut image_slice: Vec::<Rgb::<f32>> = vec![Rgb::<f32>([0.0, 0.0, 0.0]); self.w as usize];
             for x in 0..self.w {
                 let color = self.render_pixel(x, y, scene, geom, lights, spp);
-                *image.get_pixel_mut(x, y) = Rgb::<f32>([color.red, color.green, color.blue]);
+                *image_slice.get_mut(x as usize).unwrap() = Rgb::<f32>([color.red, color.green, color.blue]);
             }
-        }
+
+            let mut img = image.lock().unwrap();
+            for x in 0..self.w {
+                *img.get_pixel_mut(x, y) = *image_slice.get(x as usize).unwrap();
+            }
+        });
     }
 
     pub fn handle_ambient_light(&self, material: &Material, light: &Light) -> LinearRgba {
