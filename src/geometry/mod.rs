@@ -127,9 +127,9 @@ pub struct Light {
 }
 
 pub enum LightType {
-    AMBIENT,
-    POINT(Vec3), // stores position
-                 // AREA,
+    Ambient,
+    Point(Vec3), // stores position
+    AreaSquare(LightSquare),
 }
 
 pub struct LightStorage {
@@ -140,4 +140,10 @@ impl Default for LightStorage {
     fn default() -> Self {
         Self { lights: Vec::new() }
     }
+}
+
+pub struct LightSquare {
+    pub bottom_left: Vec3,
+    pub u_vec: Vec3, // direction travelled when u varies, multiplied by size of each side. bottom_left + u_vec == bottom_right
+    pub v_vec: Vec3,
 }

@@ -303,34 +303,40 @@ pub fn cornell_box(
     total += 1;
 
     let ambient = Light {
-        light_type: LightType::AMBIENT,
+        light_type: LightType::Ambient,
         color: LinearRgba::rgb(0.07, 0.07, 0.07), // color: LinearRgba::rgb(1.0, 1.0, 1.0)
     };
     lights.lights.push(ambient);
 
-    let n_points_dim = 3; // must be 1, 3 or 5
-    let n_half: i32 = (n_points_dim - 1) / 2;
-    for x in -n_half..(n_half + 1) {
-        for z in -n_half..(n_half + 1) {
-            let power = 1.0 / ((n_points_dim * n_points_dim) as f32);
-            let point_light = Light {
-                light_type: LightType::POINT(Vec3::new(
-                    278.0 + (x as f32 * 100.0),
-                    545.0,
-                    280.0 + (z as f32 * 100.0),
-                )),
-                color: LinearRgba::rgb(power, power, power),
-            };
-            lights.lights.push(point_light);
-        }
-    }
-
-    // lights.lights.push(
-    //     Light {
-    //         light_type: LightType::POINT(Vec3::new(378.0, 545.0, 380.0)),
-    //         color: LinearRgba::rgb(0.1, 0.1, 0.1),
+    // let n_points_dim = 3; // must be 1, 3 or 5
+    // let n_half: i32 = (n_points_dim - 1) / 2;
+    // for x in -n_half..(n_half + 1) {
+    //     for z in -n_half..(n_half + 1) {
+    //         let power = 1.0 / ((n_points_dim * n_points_dim) as f32);
+    //         let point_light = Light {
+    //             light_type: LightType::Point(Vec3::new(
+    //                 278.0 + (x as f32 * 100.0),
+    //                 545.0,
+    //                 280.0 + (z as f32 * 100.0),
+    //             )),
+    //             color: LinearRgba::rgb(power, power, power),
+    //         };
+    //         lights.lights.push(point_light);
     //     }
-    // );
+    // }
+
+    let size = 50.0;
+    for i in -1..2 {
+        let area_square = Light {
+            color: LinearRgba::rgb(1.2, 1.2, 1.2),
+            light_type: LightType::AreaSquare(LightSquare {
+                bottom_left: Vec3::new(250.0 + (i * 250) as f32, 545.0, 250.0 + (i * 250) as f32),
+                u_vec: Vec3::X * size,
+                v_vec: Vec3::Z * size,
+            }),
+        };
+        lights.lights.push(area_square);
+    }
 
     Ok(total)
 }
