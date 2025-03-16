@@ -524,29 +524,27 @@ impl Camera {
                 material.specular.blue * color.blue,
             ) * reflect;
         }
-        
+
         if refract > 0.0 && material.transparency > 0.0 {
             let eta = n1 / n2; // Ratio of IORs
-            let incident_dot_normal = incident_dir.dot(normal);
-            let facing_normal = if incident_dot_normal < 0.0 { normal } else { -normal };
-            let cos_theta1 = -incident_dir.dot(facing_normal).abs();
-    
-            // Compute sin^2(theta2) using Snell's Law
-            let sin_theta2_sq = eta * eta * (1.0 - cos_theta1 * cos_theta1);
-    
-            if sin_theta2_sq <= 1.0 { // No TIR, refraction is possible
-                let cos_theta2 = (1.0 - sin_theta2_sq).sqrt();
-                let refract_dir = (eta * incident_dir + (eta * cos_theta1 - cos_theta2) * facing_normal).normalize();
-    
+            let facing_normal = if incident_dir.dot(normal) < 0.0 {
+                normal
+            } else {
+                -normal
+            };
+            let refract_dir = incident_dir.refract(facing_normal, eta);
+
+            if refract_dir != Vec3::ZERO {
+                // Refraction succeeded (no TIR)
                 // Offset the origin to avoid self-intersection
                 let mut offset = EPSILON * facing_normal;
                 if refract_dir.dot(facing_normal) < 0.0 {
                     offset *= -1.0;
                 }
                 let origin = hit + offset;
-    
+
                 let refraction = n2; // New medium’s IOR
-    
+
                 let refraction_ray = RTCRay {
                     org_x: origin.x,
                     org_y: origin.y,
@@ -557,14 +555,15 @@ impl Camera {
                     id: refraction.to_bits(),
                     ..default()
                 };
-    
+
                 color += self.trace(refraction_ray, scene, geom, lights, depth + 1);
 
                 color = LinearRgba::rgb(
                     material.transmission.red * color.red,
                     material.transmission.green * color.green,
                     material.transmission.blue * color.blue,
-                ) * material.transparency * refract;
+                ) * material.transparency
+                    * refract;
             }
         }
 
