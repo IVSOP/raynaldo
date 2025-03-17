@@ -77,19 +77,15 @@ impl Geometry {
                 let vertex_uv_1 = mesh.tex_coords[i1];
                 let vertex_uv_2 = mesh.tex_coords[i2];
 
-                let actual_uv: Vec2 = Vec2::new(
-                    vertex_uv_0.x * w + vertex_uv_1.x * u + vertex_uv_2.x * v,
-                    vertex_uv_0.y * w + vertex_uv_1.y * u + vertex_uv_2.y * v
-                );
+                let actual_u =
+                    (vertex_uv_0.x * w + vertex_uv_1.x * u + vertex_uv_2.x * v).clamp(0.0, 1.0);
+                let actual_v =
+                    (vertex_uv_0.y * w + vertex_uv_1.y * u + vertex_uv_2.y * v).clamp(0.0, 1.0);
 
-                let color = sample_bilinear(texture, actual_uv.x, actual_uv.y).unwrap();
+                let color = sample_bilinear(texture, actual_u, actual_v).unwrap();
 
-                LinearRgba::rgb(
-                    color[0],
-                    color[1],
-                    color[2]
-                )
-            },
+                LinearRgba::rgb(color[0], color[1], color[2])
+            }
             _ => LinearRgba::RED,
         }
     }

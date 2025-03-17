@@ -110,7 +110,7 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     left_mesh.verts.push((0., 0., 559.2));
     left_mesh.verts.push((0., 548.8, 559.2));
     left_mesh.verts.push((0., 548.8, 0.));
-    
+
     left_mesh.tex_coords.push(Vec2::new(1.0, 0.0));
     left_mesh.tex_coords.push(Vec2::new(0.0, 0.0));
     left_mesh.tex_coords.push(Vec2::new(0.0, 1.0));
