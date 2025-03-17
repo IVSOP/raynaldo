@@ -36,7 +36,7 @@ pub struct RayInfo {
 const DEPTH: u32 = 4;
 const EPSILON: f32 = 1e-3;
 const AIR_REFRACT: f32 = 1.00029;
-const COMPARE_ALL_LIGHTS: bool = false;
+const COMPARE_ALL_LIGHTS: bool = true;
 const NUM_AREA_LIGHT_TESTS: u32 = 3;
 
 impl Camera {
@@ -161,8 +161,13 @@ impl Camera {
                 // // println!("hit at {} with normal {} and color {}", origin + (dir * hit.ray.tfar), normal, mesh.material.color);
                 let hit_pos = origin + dir * hit.ray.tfar;
                 let refraction = f32::from_bits(hit.ray.id);
+                let u = hit.hit.u;
+                let v = hit.hit.v;
+                let prim_id = hit.hit.primID;
 
-                color += self.direct_lighting(hit_pos, normal, &material, scene, store);
+                color += self.direct_lighting(
+                    hit_pos, normal, &material, u, v, geometry, prim_id, scene, store,
+                );
 
                 color += self.reflect_refract(
                     hit_pos, dir, normal, refraction, material, depth, scene, store,
@@ -234,30 +239,98 @@ impl Camera {
         });
     }
 
+    // pass in material to save some work???
     pub fn handle_ambient_light(&self, material: &Material, light: &Light) -> LinearRgba {
-        if material.color.red > 0.0 || material.color.green > 0.0 || material.color.blue > 0.0 {
-            LinearRgba::rgb(
-                light.color.red * material.color.red,
-                light.color.green * material.color.green,
-                light.color.blue * material.color.blue,
-            )
-        } else {
-            LinearRgba::BLACK
-        }
+        LinearRgba::rgb(
+            light.color.red * material.color.red,
+            light.color.green * material.color.green,
+            light.color.blue * material.color.blue,
+        )
     }
 
     pub fn handle_point_light(
         &self,
-        material: &Material,
+        u: f32,
+        v: f32,
+        geom: &Geometry,
+        prim_id: u32,
         light: &Light,
         hit_pos: Vec3,
         normal: Vec3,
         light_pos: Vec3,
         scene: &CommittedScene<'_>,
+        store: &Storage,
     ) -> LinearRgba {
-        if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
-        {
-            // compiler please take care of this
+        // if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
+        // {
+        // compiler please take care of this
+        let distance_to_light = (light_pos - hit_pos).length();
+        let dir_to_light = (light_pos - hit_pos).normalize();
+
+        let light_cos = dir_to_light.dot(normal);
+        if light_cos > 0.0 {
+            // make a ray to the light source to check if there is a clear path from the hit position to the light
+            // if there is, add light contribution
+
+            let mut offset = EPSILON * normal;
+            if dir_to_light.dot(normal) < 0.0 {
+                offset *= -1.0;
+            }
+            let shadow_ray_origin = hit_pos + offset;
+
+            let shadow_ray = RTCRay {
+                org_x: shadow_ray_origin.x,
+                org_y: shadow_ray_origin.y,
+                org_z: shadow_ray_origin.z,
+                dir_x: dir_to_light.x,
+                dir_y: dir_to_light.y,
+                dir_z: dir_to_light.z,
+                tfar: distance_to_light - EPSILON,
+                ..default()
+            };
+
+            // we have a direct path to the light, can add direct illumination
+            if scene.intersect_1(shadow_ray).unwrap().is_none() {
+                let diff = store.get_color(u, v, geom, prim_id);
+                let color = LinearRgba::rgb(
+                    light.color.red * diff.red,
+                    light.color.green * diff.green,
+                    light.color.blue * diff.blue,
+                ) * light_cos;
+
+                // println!("{:?}", color);
+                return color;
+            }
+        }
+        // }
+
+        LinearRgba::BLACK
+    }
+
+    // randomly select N points on the light and make them act as individual point lights
+    pub fn handle_square_light(
+        &self,
+        tex_u: f32,
+        tex_v: f32,
+        geom: &Geometry,
+        prim_id: u32,
+        light: &Light,
+        square: &LightQuad,
+        hit_pos: Vec3,
+        normal: Vec3,
+        scene: &CommittedScene<'_>,
+        store: &Storage,
+    ) -> LinearRgba {
+        // if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
+        // {
+        for _ in 0..NUM_AREA_LIGHT_TESTS {
+            let u = fastrand::f32();
+            let v = fastrand::f32();
+
+            let light_pos = square.bottom_left + (u * square.u_vec) + (v * square.v_vec);
+
+            // all the logic here is copied from point lights except NUM_AREA_LIGHT_TESTS
+
             let distance_to_light = (light_pos - hit_pos).length();
             let dir_to_light = (light_pos - hit_pos).normalize();
 
@@ -285,81 +358,20 @@ impl Camera {
 
                 // we have a direct path to the light, can add direct illumination
                 if scene.intersect_1(shadow_ray).unwrap().is_none() {
+                    let diff = store.get_color(tex_u, tex_v, geom, prim_id);
                     let color = LinearRgba::rgb(
-                        light.color.red * material.diffuse.red,
-                        light.color.green * material.diffuse.green,
-                        light.color.blue * material.diffuse.blue,
-                    ) * light_cos;
+                        light.color.red * diff.red,
+                        light.color.green * diff.green,
+                        light.color.blue * diff.blue,
+                    ) * light_cos
+                        * (1.0 / NUM_AREA_LIGHT_TESTS as f32);
 
                     // println!("{:?}", color);
                     return color;
                 }
             }
         }
-
-        LinearRgba::BLACK
-    }
-
-    // randomly select N points on the light and make them act as individual point lights
-    pub fn handle_square_light(
-        &self,
-        material: &Material,
-        light: &Light,
-        square: &LightQuad,
-        hit_pos: Vec3,
-        normal: Vec3,
-        scene: &CommittedScene<'_>,
-    ) -> LinearRgba {
-        if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
-        {
-            for _ in 0..NUM_AREA_LIGHT_TESTS {
-                let u = fastrand::f32();
-                let v = fastrand::f32();
-
-                let light_pos = square.bottom_left + (u * square.u_vec) + (v * square.v_vec);
-
-                // all the logic here is copied from point lights except NUM_AREA_LIGHT_TESTS
-
-                let distance_to_light = (light_pos - hit_pos).length();
-                let dir_to_light = (light_pos - hit_pos).normalize();
-
-                let light_cos = dir_to_light.dot(normal);
-                if light_cos > 0.0 {
-                    // make a ray to the light source to check if there is a clear path from the hit position to the light
-                    // if there is, add light contribution
-
-                    let mut offset = EPSILON * normal;
-                    if dir_to_light.dot(normal) < 0.0 {
-                        offset *= -1.0;
-                    }
-                    let shadow_ray_origin = hit_pos + offset;
-
-                    let shadow_ray = RTCRay {
-                        org_x: shadow_ray_origin.x,
-                        org_y: shadow_ray_origin.y,
-                        org_z: shadow_ray_origin.z,
-                        dir_x: dir_to_light.x,
-                        dir_y: dir_to_light.y,
-                        dir_z: dir_to_light.z,
-                        tfar: distance_to_light - EPSILON,
-                        ..default()
-                    };
-
-                    // we have a direct path to the light, can add direct illumination
-                    if scene.intersect_1(shadow_ray).unwrap().is_none() {
-                        let color = LinearRgba::rgb(
-                            light.color.red * material.diffuse.red,
-                            light.color.green * material.diffuse.green,
-                            light.color.blue * material.diffuse.blue,
-                        ) * light_cos
-                            * (1.0 / NUM_AREA_LIGHT_TESTS as f32);
-
-                        // println!("{:?}", color);
-                        return color;
-                    }
-                }
-            }
-        }
+        // }
 
         LinearRgba::BLACK
     }
@@ -370,6 +382,10 @@ impl Camera {
         hit_pos: Vec3,
         normal: Vec3,
         material: &Material,
+        u: f32,
+        v: f32,
+        geom: &Geometry,
+        prim_id: u32,
         scene: &CommittedScene<'_>,
         store: &Storage,
     ) -> LinearRgba {
@@ -380,26 +396,27 @@ impl Camera {
         if COMPARE_ALL_LIGHTS {
             // loop over all light sources
             for light in lights.iter() {
-                color +=
-                    match light.light_type {
-                        LightType::Ambient => self.handle_ambient_light(material, light),
-                        LightType::Point(light_pos) => self
-                            .handle_point_light(material, light, hit_pos, normal, light_pos, scene),
-                        LightType::AreaQuad(ref square) => self
-                            .handle_square_light(material, light, square, hit_pos, normal, scene),
-                    };
+                color += match light.light_type {
+                    LightType::Ambient => self.handle_ambient_light(material, light),
+                    LightType::Point(light_pos) => self.handle_point_light(
+                        u, v, geom, prim_id, light, hit_pos, normal, light_pos, scene, store,
+                    ),
+                    LightType::AreaQuad(ref square) => self.handle_square_light(
+                        u, v, geom, prim_id, light, square, hit_pos, normal, scene, store,
+                    ),
+                };
             }
         } else {
             let light_i = fastrand::usize(..lights.len());
             let light = lights.get(light_i).unwrap();
             color += match light.light_type {
                 LightType::Ambient => self.handle_ambient_light(material, light),
-                LightType::Point(light_pos) => {
-                    self.handle_point_light(material, light, hit_pos, normal, light_pos, scene)
-                }
-                LightType::AreaQuad(ref square) => {
-                    self.handle_square_light(material, light, square, hit_pos, normal, scene)
-                }
+                LightType::Point(light_pos) => self.handle_point_light(
+                    u, v, geom, prim_id, light, hit_pos, normal, light_pos, scene, store,
+                ),
+                LightType::AreaQuad(ref square) => self.handle_square_light(
+                    u, v, geom, prim_id, light, square, hit_pos, normal, scene, store,
+                ),
             };
 
             color *= lights.len() as f32;

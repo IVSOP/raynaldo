@@ -91,7 +91,7 @@ fn main() -> anyhow::Result<()> {
         },
     )?;
 
-    let mut store = Storage::default();
+    let mut store = Storage::new();
     cornell_box(&mut store, &device, &mut scene)?;
 
     let (gltf_doc, gltf_buff, _) = gltf::import("assets/magujo/suzanne.glb")?;

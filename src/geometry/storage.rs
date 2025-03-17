@@ -1,4 +1,5 @@
-use image::Rgb32FImage;
+use image::ImageReader;
+use image::Rgba32FImage;
 use std::collections::HashMap;
 
 use super::*;
@@ -6,17 +7,7 @@ use super::*;
 pub struct Storage {
     pub lights: Vec<Light>,
     pub geom: HashMap<u32, Geometry>,
-    pub textures: Vec<Rgb32FImage>,
-}
-
-impl Default for Storage {
-    fn default() -> Self {
-        Self {
-            lights: Vec::new(),
-            geom: HashMap::new(),
-            textures: Vec::new(),
-        }
-    }
+    pub textures: Vec<Rgba32FImage>,
 }
 
 impl Storage {
@@ -49,5 +40,37 @@ impl Storage {
 
     pub fn get_geometry(&self, id: u32) -> Option<&Geometry> {
         return self.geom.get(&id);
+    }
+
+    // use this instead of default so that the default texture is loaded
+    pub fn new() -> Self {
+        let mut res = Self {
+            lights: Vec::new(),
+            geom: HashMap::new(),
+            textures: Vec::new(),
+        };
+
+        let default_texture: Rgba32FImage = ImageReader::open("assets/textures/uv.png")
+            .expect("Default texture (assets/textures/uv.png) does not exist")
+            .decode()
+            .expect("Error decoding texture assets/textures/uv.png")
+            .into_rgba32f();
+
+        res.textures.push(default_texture);
+
+        res
+    }
+
+    // retrieves the base color from a texture
+    // u v are actually the uv passed in by embree
+    // usually when this is called I already have the material in scope, just pass it in?
+    pub fn get_color(&self, u: f32, v: f32, geom: &Geometry, prim_id: u32) -> LinearRgba {
+        match geom.material.texture {
+            Texture::Solid(color) => color,
+            Texture::Image(id) => {
+                let texture = self.textures.get(id as usize).unwrap();
+                geom.get_color(u, v, prim_id, texture)
+            }
+        }
     }
 }

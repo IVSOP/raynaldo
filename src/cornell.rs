@@ -13,7 +13,7 @@ use gltf::{
 
 pub const WHITE_MATERIAL: Material = Material {
     color: LinearRgba::rgb(0.9, 0.9, 0.9),
-    diffuse: LinearRgba::rgb(0.4, 0.4, 0.4),
+    texture: Texture::Solid(LinearRgba::rgb(0.4, 0.4, 0.4)),
     specular: LinearRgba::BLACK,
     transmission: LinearRgba::BLACK,
     refraction: 1.0,
@@ -23,7 +23,7 @@ pub const WHITE_MATERIAL: Material = Material {
 
 pub const RED_MATERIAL: Material = Material {
     color: LinearRgba::rgb(0.9, 0.0, 0.0),
-    diffuse: LinearRgba::rgb(0.4, 0.0, 0.0),
+    texture: Texture::Solid(LinearRgba::rgb(0.4, 0.0, 0.0)),
     specular: LinearRgba::BLACK,
     transmission: LinearRgba::BLACK,
     refraction: 1.0,
@@ -32,7 +32,8 @@ pub const RED_MATERIAL: Material = Material {
 };
 pub const GREEN_MATERIAL: Material = Material {
     color: LinearRgba::rgb(0.0, 0.9, 0.0),
-    diffuse: LinearRgba::rgb(0.0, 0.2, 0.0),
+    // texture: Texture::Solid(LinearRgba::rgb(0.0, 0.2, 0.0)),
+    texture: Texture::Image(0),
     specular: LinearRgba::BLACK,
     transmission: LinearRgba::BLACK,
     refraction: 1.0,
@@ -41,7 +42,7 @@ pub const GREEN_MATERIAL: Material = Material {
 };
 pub const BLUE_MATERIAL: Material = Material {
     color: LinearRgba::rgb(0.0, 0.0, 0.9),
-    diffuse: LinearRgba::rgb(0.0, 0.0, 0.4),
+    texture: Texture::Solid(LinearRgba::rgb(0.0, 0.0, 0.4)),
     specular: LinearRgba::BLACK,
     transmission: LinearRgba::BLACK,
     refraction: 1.0,
@@ -50,7 +51,7 @@ pub const BLUE_MATERIAL: Material = Material {
 };
 pub const ORANGE_MATERIAL: Material = Material {
     color: LinearRgba::rgb(0.99, 0.65, 0.0),
-    diffuse: LinearRgba::rgb(0.37, 0.24, 0.0),
+    texture: Texture::Solid(LinearRgba::rgb(0.37, 0.24, 0.0)),
     specular: LinearRgba::BLACK,
     transmission: LinearRgba::BLACK,
     refraction: 1.0,
@@ -59,7 +60,7 @@ pub const ORANGE_MATERIAL: Material = Material {
 };
 pub const MIRROR_MATERIAL: Material = Material {
     color: LinearRgba::BLACK,
-    diffuse: LinearRgba::BLACK,
+    texture: Texture::Solid(LinearRgba::BLACK),
     specular: LinearRgba::rgb(0.9, 0.9, 0.9),
     transmission: LinearRgba::BLACK,
     refraction: 1.5,
@@ -68,7 +69,7 @@ pub const MIRROR_MATERIAL: Material = Material {
 };
 pub const GLASS_MATERIAL: Material = Material {
     color: LinearRgba::WHITE,
-    diffuse: LinearRgba::BLACK,
+    texture: Texture::Solid(LinearRgba::BLACK),
     specular: LinearRgba::rgb(1.0, 1.0, 1.0),
     transmission: LinearRgba::rgb(0.9, 0.9, 0.9),
     refraction: 1.125,
@@ -109,6 +110,12 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     left_mesh.verts.push((0., 0., 559.2));
     left_mesh.verts.push((0., 548.8, 559.2));
     left_mesh.verts.push((0., 548.8, 0.));
+    
+    left_mesh.tex_coords.push(Vec2::new(1.0, 0.0));
+    left_mesh.tex_coords.push(Vec2::new(0.0, 0.0));
+    left_mesh.tex_coords.push(Vec2::new(0.0, 1.0));
+    left_mesh.tex_coords.push(Vec2::new(1.0, 1.0));
+
     left_mesh.indices.push((0, 2, 1));
     left_mesh.indices.push((0, 3, 2));
     let left = Geometry::with_material(GREEN_MATERIAL, GeomInfo::MESH(left_mesh));
@@ -407,6 +414,7 @@ pub fn add_gltf(
             let new_mesh = Mesh {
                 verts,
                 indices: triangle_indices,
+                ..Mesh::default() // TODO!!!!!!!!! add texture coords to this
             };
             let geometry = Geometry::with_material(material.clone(), GeomInfo::MESH(new_mesh));
             let _ = store.attach_geometry(geometry, &device, &mut scene)?;
