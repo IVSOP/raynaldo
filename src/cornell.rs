@@ -329,7 +329,7 @@ pub fn cornell_box(
     for i in -1..2 {
         let area_square = Light {
             color: LinearRgba::rgb(1.2, 1.2, 1.2),
-            light_type: LightType::AreaSquare(LightSquare {
+            light_type: LightType::AreaQuad(LightQuad {
                 bottom_left: Vec3::new(250.0 + (i * 250) as f32, 545.0, 250.0 + (i * 250) as f32),
                 u_vec: Vec3::X * size,
                 v_vec: Vec3::Z * size,

@@ -308,7 +308,7 @@ impl Camera {
         &self,
         material: &Material,
         light: &Light,
-        square: &LightSquare,
+        square: &LightQuad,
         hit_pos: Vec3,
         normal: Vec3,
         scene: &CommittedScene<'_>,
@@ -386,7 +386,7 @@ impl Camera {
                         LightType::Ambient => self.handle_ambient_light(material, light),
                         LightType::Point(light_pos) => self
                             .handle_point_light(material, light, hit_pos, normal, light_pos, scene),
-                        LightType::AreaSquare(ref square) => self
+                        LightType::AreaQuad(ref square) => self
                             .handle_square_light(material, light, square, hit_pos, normal, scene),
                     };
             }
@@ -398,7 +398,7 @@ impl Camera {
                 LightType::Point(light_pos) => {
                     self.handle_point_light(material, light, hit_pos, normal, light_pos, scene)
                 }
-                LightType::AreaSquare(ref square) => {
+                LightType::AreaQuad(ref square) => {
                     self.handle_square_light(material, light, square, hit_pos, normal, scene)
                 }
             };
