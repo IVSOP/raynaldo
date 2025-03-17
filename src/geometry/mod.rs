@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 // use crate::common::*;
 use anyhow::Result;
 use bevy_color::LinearRgba;
@@ -8,6 +6,9 @@ use embree4_rs::{
     Device, Scene,
     geometry::{SphereGeometry, TriangleMeshGeometry},
 };
+
+mod storage;
+pub use storage::*;
 
 #[derive(Clone)]
 pub struct Sphere {
@@ -74,53 +75,6 @@ impl Geometry {
     }
 }
 
-pub struct GeomStorage {
-    pub geom: HashMap<u32, Geometry>,
-}
-
-impl Default for GeomStorage {
-    fn default() -> Self {
-        Self {
-            geom: HashMap::new(),
-        }
-    }
-}
-
-impl GeomStorage {
-    // returns the ID of this mesh, or error
-    // the mesh is moved into internal structure
-    pub fn attach(
-        &mut self,
-        geom: Geometry,
-        device: &Device,
-        scene: &mut Scene<'_>,
-    ) -> Result<u32> {
-        let id: u32;
-
-        match geom.info {
-            GeomInfo::MESH(ref mesh) => {
-                let embree_mesh =
-                    TriangleMeshGeometry::try_new(device, &mesh.verts, &mesh.indices)?;
-                id = scene.attach_geometry(&embree_mesh)?;
-            }
-            GeomInfo::SPHERE(ref sphere) => {
-                let embree_geom = SphereGeometry::try_new(
-                    device,
-                    (sphere.center.x, sphere.center.y, sphere.center.z),
-                    sphere.radius,
-                )?;
-                id = scene.attach_geometry(&embree_geom)?;
-            }
-        }
-        self.geom.insert(id, geom);
-        Ok(id)
-    }
-
-    pub fn get(&self, id: u32) -> Option<&Geometry> {
-        return self.geom.get(&id);
-    }
-}
-
 pub struct Light {
     pub light_type: LightType,
     pub color: LinearRgba,
@@ -130,16 +84,6 @@ pub enum LightType {
     Ambient,
     Point(Vec3), // stores position
     AreaQuad(LightQuad),
-}
-
-pub struct LightStorage {
-    pub lights: Vec<Light>,
-}
-
-impl Default for LightStorage {
-    fn default() -> Self {
-        Self { lights: Vec::new() }
-    }
 }
 
 pub struct LightQuad {

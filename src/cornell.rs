@@ -76,12 +76,7 @@ pub const GLASS_MATERIAL: Material = Material {
     transparency: 1.0,
 };
 
-pub fn cornell_box(
-    geom: &mut GeomStorage,
-    lights: &mut LightStorage,
-    device: &Device,
-    mut scene: &mut Scene<'_>,
-) -> Result<u32> {
+pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'_>) -> Result<u32> {
     let mut ceiling_mesh = Mesh::default();
     ceiling_mesh.verts.push((556.0, 548.8, 0.0));
     ceiling_mesh.verts.push((0.0, 548.8, 0.0));
@@ -263,50 +258,50 @@ pub fn cornell_box(
     let sphere_geometry = Geometry::with_material(GLASS_MATERIAL, GeomInfo::SPHERE(sphere));
 
     let mut total = 0;
-    let _ = geom.attach(ceiling, &device, &mut scene)?;
+    let _ = store.attach_geometry(ceiling, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(floor, &device, &mut scene)?;
+    let _ = store.attach_geometry(floor, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(back, &device, &mut scene)?;
+    let _ = store.attach_geometry(back, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(left, &device, &mut scene)?;
+    let _ = store.attach_geometry(left, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(right, &device, &mut scene)?;
+    let _ = store.attach_geometry(right, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(short_block_top, &device, &mut scene)?;
+    let _ = store.attach_geometry(short_block_top, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(short_block_bot, &device, &mut scene)?;
+    let _ = store.attach_geometry(short_block_bot, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(short_block_right, &device, &mut scene)?;
+    let _ = store.attach_geometry(short_block_right, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(short_block_left, &device, &mut scene)?;
+    let _ = store.attach_geometry(short_block_left, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(short_block_back, &device, &mut scene)?;
+    let _ = store.attach_geometry(short_block_back, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(short_block_front, &device, &mut scene)?;
+    let _ = store.attach_geometry(short_block_front, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(tall_block_top, &device, &mut scene)?;
+    let _ = store.attach_geometry(tall_block_top, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(tall_block_bot, &device, &mut scene)?;
+    let _ = store.attach_geometry(tall_block_bot, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(tall_block_right, &device, &mut scene)?;
+    let _ = store.attach_geometry(tall_block_right, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(tall_block_left, &device, &mut scene)?;
+    let _ = store.attach_geometry(tall_block_left, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(tall_block_back, &device, &mut scene)?;
+    let _ = store.attach_geometry(tall_block_back, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(tall_block_front, &device, &mut scene)?;
+    let _ = store.attach_geometry(tall_block_front, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(mirror, &device, &mut scene)?;
+    let _ = store.attach_geometry(mirror, &device, &mut scene)?;
     total += 1;
-    let _ = geom.attach(sphere_geometry, &device, &mut scene)?;
+    let _ = store.attach_geometry(sphere_geometry, &device, &mut scene)?;
     total += 1;
 
     let ambient = Light {
         light_type: LightType::Ambient,
         color: LinearRgba::rgb(0.07, 0.07, 0.07), // color: LinearRgba::rgb(1.0, 1.0, 1.0)
     };
-    lights.lights.push(ambient);
+    store.lights.push(ambient);
 
     // let n_points_dim = 3; // must be 1, 3 or 5
     // let n_half: i32 = (n_points_dim - 1) / 2;
@@ -335,7 +330,7 @@ pub fn cornell_box(
                 v_vec: Vec3::Z * size,
             }),
         };
-        lights.lights.push(area_square);
+        store.lights.push(area_square);
     }
 
     Ok(total)
@@ -343,7 +338,7 @@ pub fn cornell_box(
 
 // WARNING: adds meshes one by one. ignores children. assumes all primitives are triangles
 pub fn add_gltf(
-    geom: &mut GeomStorage,
+    store: &mut Storage,
     device: &Device,
     mut scene: &mut Scene<'_>,
     gltf_doc: &gltf::Document,
@@ -414,7 +409,7 @@ pub fn add_gltf(
                 indices: triangle_indices,
             };
             let geometry = Geometry::with_material(material.clone(), GeomInfo::MESH(new_mesh));
-            let _ = geom.attach(geometry, &device, &mut scene)?;
+            let _ = store.attach_geometry(geometry, &device, &mut scene)?;
             total += 1;
         }
     }

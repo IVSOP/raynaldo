@@ -91,9 +91,8 @@ fn main() -> anyhow::Result<()> {
         },
     )?;
 
-    let mut geom = GeomStorage::default();
-    let mut lights = LightStorage::default();
-    cornell_box(&mut geom, &mut lights, &device, &mut scene)?;
+    let mut store = Storage::default();
+    cornell_box(&mut store, &device, &mut scene)?;
 
     let (gltf_doc, gltf_buff, _) = gltf::import("assets/magujo/suzanne.glb")?;
     let transform = Transform {
@@ -102,7 +101,7 @@ fn main() -> anyhow::Result<()> {
         scale: Vec3::splat(50.0),
     };
     add_gltf(
-        &mut geom,
+        &mut store,
         &device,
         &mut scene,
         &gltf_doc,
@@ -112,13 +111,7 @@ fn main() -> anyhow::Result<()> {
     )?;
     let mut commited_scene = scene.commit()?;
 
-    camera.render(
-        &mut image,
-        &mut commited_scene,
-        &geom,
-        &lights,
-        rays_per_pixel,
-    );
+    camera.render(&mut image, &mut commited_scene, &store, rays_per_pixel);
 
     tonemap(&mut image);
     let image: RgbImage = image.convert();

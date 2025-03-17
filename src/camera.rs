@@ -141,8 +141,7 @@ impl Camera {
         &self,
         ray: RTCRay,
         scene: &CommittedScene<'_>,
-        geom: &GeomStorage,
-        lights: &LightStorage,
+        store: &Storage,
         depth: u32,
     ) -> LinearRgba {
         if depth > DEPTH {
@@ -152,7 +151,7 @@ impl Camera {
         match scene.intersect_1(ray).unwrap() {
             Some(hit) => {
                 let mut color = LinearRgba::BLACK;
-                let geometry: &Geometry = geom.get(hit.hit.geomID).unwrap();
+                let geometry: &Geometry = store.get_geometry(hit.hit.geomID).unwrap();
                 let material = &geometry.material;
 
                 let origin = Vec3::new(hit.ray.org_x, hit.ray.org_y, hit.ray.org_z);
@@ -163,15 +162,15 @@ impl Camera {
                 let hit_pos = origin + dir * hit.ray.tfar;
                 let refraction = f32::from_bits(hit.ray.id);
 
-                color += self.direct_lighting(hit_pos, normal, &material, lights, scene);
+                color += self.direct_lighting(hit_pos, normal, &material, scene, store);
 
                 color += self.reflect_refract(
-                    hit_pos, dir, normal, refraction, material, depth, scene, geom, lights,
+                    hit_pos, dir, normal, refraction, material, depth, scene, store,
                 );
                 // let spec = material.specular;
                 // if spec.red > 0.0 || spec.green > 0.0 || spec.blue > 0.0 {
                 //     color += self.specular_reflection(
-                //         hit_pos, dir, normal, refraction, material, depth, scene, geom, lights,
+                //         hit_pos, dir, normal, refraction, material, depth, scene, store, lights,
                 //     );
                 // }
 
@@ -179,7 +178,7 @@ impl Camera {
                 // if transmission.red > 0.0 || transmission.green > 0.0 || transmission.blue > 0.0
                 // {
                 //     color += self.specular_transmission(
-                //         hit_pos, dir, normal, refraction, material, depth, scene, geom, lights,
+                //         hit_pos, dir, normal, refraction, material, depth, scene, store, lights,
                 //     );
                 // }
 
@@ -195,8 +194,7 @@ impl Camera {
         x: u32,
         y: u32,
         scene: &CommittedScene<'_>,
-        geom: &GeomStorage,
-        lights: &LightStorage,
+        store: &Storage,
         spp: u32,
     ) -> LinearRgba {
         let mut base_color = LinearRgba::BLACK;
@@ -205,7 +203,7 @@ impl Camera {
         for _ in 0..spp {
             let ray = self.generate_ray(x, y, Some((fastrand::f32(), fastrand::f32())));
 
-            base_color += self.trace(ray, scene, geom, lights, 0) * sppf;
+            base_color += self.trace(ray, scene, store, 0) * sppf;
         }
 
         base_color
@@ -215,8 +213,7 @@ impl Camera {
         &self,
         image: &mut Rgb32FImage,
         scene: &CommittedScene<'_>,
-        geom: &GeomStorage,
-        lights: &LightStorage,
+        store: &Storage,
         spp: u32,
     ) {
         // TODO: add more unsafe to be faster
@@ -225,7 +222,7 @@ impl Camera {
             // wtf this is terrible
             let mut image_slice: Vec<Rgb<f32>> = vec![Rgb::<f32>([0.0, 0.0, 0.0]); self.w as usize];
             for x in 0..self.w {
-                let color = self.render_pixel(x, y, scene, geom, lights, spp);
+                let color = self.render_pixel(x, y, scene, store, spp);
                 *image_slice.get_mut(x as usize).unwrap() =
                     Rgb::<f32>([color.red, color.green, color.blue]);
             }
@@ -373,14 +370,16 @@ impl Camera {
         hit_pos: Vec3,
         normal: Vec3,
         material: &Material,
-        lights: &LightStorage,
         scene: &CommittedScene<'_>,
+        store: &Storage,
     ) -> LinearRgba {
         let mut color = LinearRgba::BLACK;
 
+        let lights = &store.lights;
+
         if COMPARE_ALL_LIGHTS {
             // loop over all light sources
-            for light in lights.lights.iter() {
+            for light in lights.iter() {
                 color +=
                     match light.light_type {
                         LightType::Ambient => self.handle_ambient_light(material, light),
@@ -391,8 +390,8 @@ impl Camera {
                     };
             }
         } else {
-            let light_i = fastrand::usize(..lights.lights.len());
-            let light = lights.lights.get(light_i).unwrap();
+            let light_i = fastrand::usize(..lights.len());
+            let light = lights.get(light_i).unwrap();
             color += match light.light_type {
                 LightType::Ambient => self.handle_ambient_light(material, light),
                 LightType::Point(light_pos) => {
@@ -403,7 +402,7 @@ impl Camera {
                 }
             };
 
-            color *= lights.lights.len() as f32;
+            color *= lights.len() as f32;
         }
 
         color
@@ -419,8 +418,7 @@ impl Camera {
     //     material: &Material,
     //     depth: u32,
     //     scene: &CommittedScene<'_>,
-    //     geom: &GeomStorage,
-    //     lights: &LightStorage,
+    //     store: &Storage,
     // ) -> LinearRgba {
     //     let rdir = dir.reflect(normal);
 
@@ -447,7 +445,7 @@ impl Camera {
     //         ..default()
     //     };
 
-    //     let color = self.trace(new_ray, scene, geom, lights, depth + 1);
+    //     let color = self.trace(new_ray, scene, store, lights, depth + 1);
 
     //     LinearRgba::rgb(
     //         material.specular.red * color.red,
@@ -467,8 +465,7 @@ impl Camera {
     //     material: &Material,
     //     depth: u32,
     //     scene: &CommittedScene<'_>,
-    //     geom: &GeomStorage,
-    //     lights: &LightStorage,
+    //     store: &Storage,
     // ) -> LinearRgba {
 
     //     let material_refraction: f32;
@@ -521,7 +518,7 @@ impl Camera {
     //         ..default()
     //     };
 
-    //     let color = self.trace(refraction_ray, scene, geom, lights, depth + 1);
+    //     let color = self.trace(refraction_ray, scene, store, lights, depth + 1);
 
     //     LinearRgba::rgb(
     //         material.transmission.red * color.red,
@@ -566,8 +563,7 @@ impl Camera {
         material: &Material,
         depth: u32,
         scene: &CommittedScene<'_>,
-        geom: &GeomStorage,
-        lights: &LightStorage,
+        store: &Storage,
     ) -> LinearRgba {
         // n1 is refraction being left
         // n2 is refraction being entered
@@ -613,7 +609,7 @@ impl Camera {
                 ..default()
             };
 
-            color += self.trace(reflection_ray, scene, geom, lights, depth + 1);
+            color += self.trace(reflection_ray, scene, store, depth + 1);
 
             color = LinearRgba::rgb(
                 material.specular.red * color.red,
@@ -653,7 +649,7 @@ impl Camera {
                     ..default()
                 };
 
-                color += self.trace(refraction_ray, scene, geom, lights, depth + 1);
+                color += self.trace(refraction_ray, scene, store, depth + 1);
 
                 color = LinearRgba::rgb(
                     material.transmission.red * color.red,
