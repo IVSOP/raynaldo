@@ -109,8 +109,24 @@ fn main() -> anyhow::Result<()> {
         &transform,
         GLASS_MATERIAL,
     )?;
-    let mut commited_scene = scene.commit()?;
 
+    let (gltf_doc, gltf_buff, _) = gltf::import("assets/cube.glb")?;
+    let transform = Transform {
+        translation: Vec3::new(350.0, 50.0, 75.0),
+        scale: Vec3::splat(50.0),
+        ..Transform::default()
+    };
+    add_gltf(
+        &mut store,
+        &device,
+        &mut scene,
+        &gltf_doc,
+        &gltf_buff,
+        &transform,
+        UV_MATERIAL,
+    )?;
+
+    let mut commited_scene = scene.commit()?;
     camera.render(&mut image, &mut commited_scene, &store, rays_per_pixel);
 
     tonemap(&mut image);

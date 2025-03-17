@@ -32,8 +32,7 @@ pub const RED_MATERIAL: Material = Material {
 };
 pub const GREEN_MATERIAL: Material = Material {
     color: LinearRgba::rgb(0.0, 0.9, 0.0),
-    // texture: Texture::Solid(LinearRgba::rgb(0.0, 0.2, 0.0)),
-    texture: Texture::Image(0),
+    texture: Texture::Solid(LinearRgba::rgb(0.0, 0.2, 0.0)),
     specular: LinearRgba::BLACK,
     transmission: LinearRgba::BLACK,
     refraction: 1.0,
@@ -75,6 +74,15 @@ pub const GLASS_MATERIAL: Material = Material {
     refraction: 1.125,
     reflectivity: 0.1, // try 0.01
     transparency: 1.0,
+};
+pub const UV_MATERIAL: Material = Material {
+    color: LinearRgba::rgb(1.0, 1.0, 1.0),
+    texture: Texture::Image(0),
+    specular: LinearRgba::BLACK,
+    transmission: LinearRgba::BLACK,
+    refraction: 1.0,
+    reflectivity: 0.0,
+    transparency: 0.0,
 };
 
 pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'_>) -> Result<u32> {
@@ -118,7 +126,7 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
 
     left_mesh.indices.push((0, 2, 1));
     left_mesh.indices.push((0, 3, 2));
-    let left = Geometry::with_material(GREEN_MATERIAL, GeomInfo::MESH(left_mesh));
+    let left = Geometry::with_material(UV_MATERIAL, GeomInfo::MESH(left_mesh));
 
     let mut right_mesh = Mesh::default();
     right_mesh.verts.push((552.8, 0.0, 0.));
@@ -365,11 +373,12 @@ pub fn add_gltf(
     //         }
     //     }
     // }
-
+    
     for mesh in gltf_doc.meshes() {
         for primitive in mesh.primitives() {
             let mut verts: Vec<(f32, f32, f32)> = Vec::new();
             let mut indices: Vec<u32> = Vec::new();
+            let mut tex_coords: Vec<Vec2> = Vec::new();
 
             let reader = primitive.reader(|buffer| Some(&gltf_buff[buffer.index()]));
             if let Some(iter) = reader.read_positions() {
@@ -404,6 +413,26 @@ pub fn add_gltf(
                 }
             }
 
+            if let Some(iter) = reader.read_tex_coords(0) {
+                match iter {
+                    ReadTexCoords::U8(inner) => {
+                        for uv in inner {
+                            tex_coords.push(Vec2::new(uv[0] as f32, uv[1] as f32));
+                        }
+                    }
+                    ReadTexCoords::U16(inner) => {
+                        for uv in inner {
+                            tex_coords.push(Vec2::new(uv[0] as f32, uv[1] as f32));
+                        }
+                    }
+                    ReadTexCoords::F32(inner) => {
+                        for uv in inner {
+                            tex_coords.push(Vec2::new(uv[0], uv[1]));
+                        }
+                    }
+                }
+            }
+
             // panic if not divisible by 3?????
             let triangle_indices: Vec<(u32, u32, u32)> = indices
                 .chunks(3)
@@ -414,7 +443,7 @@ pub fn add_gltf(
             let new_mesh = Mesh {
                 verts,
                 indices: triangle_indices,
-                ..Mesh::default() // TODO!!!!!!!!! add texture coords to this
+                tex_coords,
             };
             let geometry = Geometry::with_material(material.clone(), GeomInfo::MESH(new_mesh));
             let _ = store.attach_geometry(geometry, &device, &mut scene)?;
