@@ -52,7 +52,7 @@ impl Geometry {
         Self { material, info }
     }
 
-    // retrieves the base color from a texture
+    // samples color according to uv, prim_id, and a given texture
     // u v are actually the uv passed in by embree
     pub fn get_color(&self, u: f32, v: f32, prim_id: u32, texture: &Rgba32FImage) -> LinearRgba {
         let w = 1.0 - u - v;
@@ -108,6 +108,7 @@ pub struct Material {
     pub reflectivity: f32,
     pub transparency: f32,
     pub texture: Texture,
+    pub emissive: Texture,
 }
 
 impl Default for Material {
@@ -121,6 +122,7 @@ impl Default for Material {
             reflectivity: 0.0,
             transparency: 0.0,
             texture: Texture::Solid(LinearRgba::RED),
+            emissive: Texture::Solid(LinearRgba::NONE)
         }
     }
 }

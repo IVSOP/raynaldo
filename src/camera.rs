@@ -172,6 +172,9 @@ impl Camera {
                 color += self.reflect_refract(
                     hit_pos, dir, normal, refraction, material, depth, scene, store,
                 );
+
+                color += store.get_emissive(u, v, geometry, prim_id);
+
                 // let spec = material.specular;
                 // if spec.red > 0.0 || spec.green > 0.0 || spec.blue > 0.0 {
                 //     color += self.specular_reflection(
@@ -632,7 +635,7 @@ impl Camera {
                 material.specular.red * color.red,
                 material.specular.green * color.green,
                 material.specular.blue * color.blue,
-            ) * reflect;
+            ) * reflect; // TODO: multiply by reflectivity of the material????????
         }
 
         if refract > 0.0 && material.transparency > 0.0 {

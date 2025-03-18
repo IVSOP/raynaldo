@@ -15,8 +15,8 @@ use camera::*;
 
 mod geometry;
 
-const W: u32 = 2560;
-const H: u32 = 1440;
+const W: u32 = 640;
+const H: u32 = 640;
 
 // tonemapping todo grokado, queria usar o TonyMcMapFace mas nao faco a minima por onde comecar
 pub fn tonemap(image: &mut Rgb32FImage) {
@@ -123,7 +123,7 @@ fn main() -> anyhow::Result<()> {
         &gltf_doc,
         &gltf_buff,
         &transform,
-        UV_MATERIAL,
+        EMISSIVE_MATERIAL,
     )?;
 
     let mut commited_scene = scene.commit()?;

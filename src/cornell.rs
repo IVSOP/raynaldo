@@ -19,6 +19,7 @@ pub const WHITE_MATERIAL: Material = Material {
     refraction: 1.0,
     reflectivity: 0.0,
     transparency: 0.0,
+    emissive: Texture::Solid(LinearRgba::NONE),
 };
 
 pub const RED_MATERIAL: Material = Material {
@@ -29,6 +30,7 @@ pub const RED_MATERIAL: Material = Material {
     refraction: 1.0,
     reflectivity: 0.0,
     transparency: 0.0,
+    emissive: Texture::Solid(LinearRgba::NONE),
 };
 pub const GREEN_MATERIAL: Material = Material {
     color: LinearRgba::rgb(0.0, 0.9, 0.0),
@@ -38,6 +40,7 @@ pub const GREEN_MATERIAL: Material = Material {
     refraction: 1.0,
     reflectivity: 0.0,
     transparency: 0.0,
+    emissive: Texture::Solid(LinearRgba::NONE),
 };
 pub const BLUE_MATERIAL: Material = Material {
     color: LinearRgba::rgb(0.0, 0.0, 0.9),
@@ -47,6 +50,7 @@ pub const BLUE_MATERIAL: Material = Material {
     refraction: 1.0,
     reflectivity: 0.0,
     transparency: 0.0,
+    emissive: Texture::Solid(LinearRgba::NONE),
 };
 pub const ORANGE_MATERIAL: Material = Material {
     color: LinearRgba::rgb(0.99, 0.65, 0.0),
@@ -56,6 +60,7 @@ pub const ORANGE_MATERIAL: Material = Material {
     refraction: 1.0,
     reflectivity: 0.0,
     transparency: 0.0,
+    emissive: Texture::Solid(LinearRgba::NONE),
 };
 pub const MIRROR_MATERIAL: Material = Material {
     color: LinearRgba::BLACK,
@@ -65,6 +70,7 @@ pub const MIRROR_MATERIAL: Material = Material {
     refraction: 1.5,
     reflectivity: 1.0,
     transparency: 0.0,
+    emissive: Texture::Solid(LinearRgba::NONE),
 };
 pub const GLASS_MATERIAL: Material = Material {
     color: LinearRgba::WHITE,
@@ -74,6 +80,7 @@ pub const GLASS_MATERIAL: Material = Material {
     refraction: 1.125,
     reflectivity: 0.1, // try 0.01
     transparency: 1.0,
+    emissive: Texture::Solid(LinearRgba::NONE),
 };
 pub const UV_MATERIAL: Material = Material {
     color: LinearRgba::rgb(1.0, 1.0, 1.0),
@@ -83,7 +90,20 @@ pub const UV_MATERIAL: Material = Material {
     refraction: 1.0,
     reflectivity: 0.0,
     transparency: 0.0,
+    emissive: Texture::Solid(LinearRgba::NONE),
 };
+
+pub const EMISSIVE_MATERIAL: Material = Material {
+    color: LinearRgba::rgb(1.0, 1.0, 1.0),
+    texture: Texture::Image(0),
+    specular: LinearRgba::BLACK,
+    transmission: LinearRgba::BLACK,
+    refraction: 1.0,
+    reflectivity: 0.0,
+    transparency: 0.0,
+    emissive: Texture::Solid(LinearRgba::RED),
+};
+
 
 pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'_>) -> Result<u32> {
     let mut ceiling_mesh = Mesh::default();

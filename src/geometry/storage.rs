@@ -73,4 +73,14 @@ impl Storage {
             }
         }
     }
+
+    pub fn get_emissive(&self, u: f32, v: f32, geom: &Geometry, prim_id: u32) -> LinearRgba {
+        match geom.material.emissive {
+            Texture::Solid(color) => color,
+            Texture::Image(id) => {
+                let texture = self.textures.get(id as usize).unwrap();
+                geom.get_color(u, v, prim_id, texture)
+            }
+        }
+    }
 }
