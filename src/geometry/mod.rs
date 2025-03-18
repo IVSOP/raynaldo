@@ -79,8 +79,10 @@ impl Geometry {
 
                 let actual_u =
                     (vertex_uv_0.x * w + vertex_uv_1.x * u + vertex_uv_2.x * v).clamp(0.0, 1.0);
-                let actual_v =
-                    (vertex_uv_0.y * w + vertex_uv_1.y * u + vertex_uv_2.y * v).clamp(0.0, 1.0);
+                // FIX: textures are flipped vertically. is it this math or the image loader?
+                // for now I just added 1.0 - ... here
+                let actual_v = 1.0
+                    - (vertex_uv_0.y * w + vertex_uv_1.y * u + vertex_uv_2.y * v).clamp(0.0, 1.0);
 
                 let color = sample_bilinear(texture, actual_u, actual_v).unwrap();
 
@@ -122,7 +124,7 @@ impl Default for Material {
             reflectivity: 0.0,
             transparency: 0.0,
             texture: Texture::Solid(LinearRgba::RED),
-            emissive: Texture::Solid(LinearRgba::NONE)
+            emissive: Texture::Solid(LinearRgba::NONE),
         }
     }
 }

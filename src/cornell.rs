@@ -104,8 +104,18 @@ pub const EMISSIVE_MATERIAL: Material = Material {
     emissive: Texture::Solid(LinearRgba::RED),
 };
 
+pub const CUBEMAP_MATERIAL: Material = Material {
+    color: LinearRgba::BLACK,
+    texture: Texture::Image(0),
+    specular: LinearRgba::BLACK,
+    transmission: LinearRgba::BLACK,
+    refraction: 1.0,
+    reflectivity: 0.0,
+    transparency: 0.0,
+    emissive: Texture::Image(1),
+};
 
-pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'_>) -> Result<u32> {
+pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'_>) -> Result<()> {
     let mut ceiling_mesh = Mesh::default();
     ceiling_mesh.verts.push((556.0, 548.8, 0.0));
     ceiling_mesh.verts.push((0.0, 548.8, 0.0));
@@ -292,45 +302,25 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     };
     let sphere_geometry = Geometry::with_material(GLASS_MATERIAL, GeomInfo::SPHERE(sphere));
 
-    let mut total = 0;
-    let _ = store.attach_geometry(ceiling, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(floor, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(back, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(left, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(right, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(short_block_top, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(short_block_bot, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(short_block_right, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(short_block_left, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(short_block_back, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(short_block_front, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(tall_block_top, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(tall_block_bot, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(tall_block_right, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(tall_block_left, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(tall_block_back, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(tall_block_front, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(mirror, &device, &mut scene)?;
-    total += 1;
-    let _ = store.attach_geometry(sphere_geometry, &device, &mut scene)?;
-    total += 1;
+    store.attach_geometry(ceiling, &device, &mut scene)?;
+    store.attach_geometry(floor, &device, &mut scene)?;
+    store.attach_geometry(back, &device, &mut scene)?;
+    store.attach_geometry(left, &device, &mut scene)?;
+    store.attach_geometry(right, &device, &mut scene)?;
+    store.attach_geometry(short_block_top, &device, &mut scene)?;
+    store.attach_geometry(short_block_bot, &device, &mut scene)?;
+    store.attach_geometry(short_block_right, &device, &mut scene)?;
+    store.attach_geometry(short_block_left, &device, &mut scene)?;
+    store.attach_geometry(short_block_back, &device, &mut scene)?;
+    store.attach_geometry(short_block_front, &device, &mut scene)?;
+    store.attach_geometry(tall_block_top, &device, &mut scene)?;
+    store.attach_geometry(tall_block_bot, &device, &mut scene)?;
+    store.attach_geometry(tall_block_right, &device, &mut scene)?;
+    store.attach_geometry(tall_block_left, &device, &mut scene)?;
+    store.attach_geometry(tall_block_back, &device, &mut scene)?;
+    store.attach_geometry(tall_block_front, &device, &mut scene)?;
+    store.attach_geometry(mirror, &device, &mut scene)?;
+    store.attach_geometry(sphere_geometry, &device, &mut scene)?;
 
     let ambient = Light {
         light_type: LightType::Ambient,
@@ -368,7 +358,7 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
         store.lights.push(area_square);
     }
 
-    Ok(total)
+    Ok(())
 }
 
 // WARNING: adds meshes one by one. ignores children. assumes all primitives are triangles
@@ -380,9 +370,7 @@ pub fn add_gltf(
     gltf_buff: &Vec<gltf::buffer::Data>,
     transform: &Transform,
     material: Material,
-) -> Result<u32> {
-    let mut total = 0;
-
+) -> Result<()> {
     let matrix = transform.compute_matrix();
 
     // for scene in gltf.scenes() {
@@ -393,7 +381,7 @@ pub fn add_gltf(
     //         }
     //     }
     // }
-    
+
     for mesh in gltf_doc.meshes() {
         for primitive in mesh.primitives() {
             let mut verts: Vec<(f32, f32, f32)> = Vec::new();
@@ -467,12 +455,203 @@ pub fn add_gltf(
             };
             let geometry = Geometry::with_material(material.clone(), GeomInfo::MESH(new_mesh));
             let _ = store.attach_geometry(geometry, &device, &mut scene)?;
-            total += 1;
         }
     }
 
-    Ok(total)
+    Ok(())
 }
 
-// 2122
-// 3126
+pub fn add_skybox(store: &mut Storage, device: &Device, scene: &mut Scene<'_>) -> Result<()> {
+    let mut front = Mesh::default();
+    let mut back = Mesh::default();
+    let mut right = Mesh::default();
+    let mut left = Mesh::default();
+    let mut top = Mesh::default();
+    let mut bottom = Mesh::default();
+
+    let third = 1.0 / 3.0;
+
+    let mut front_material = CUBEMAP_MATERIAL;
+    front_material.emissive = Texture::Image(1);
+    let mut back_material = CUBEMAP_MATERIAL;
+    back_material.emissive = Texture::Image(2);
+    let mut right_material = CUBEMAP_MATERIAL;
+    right_material.emissive = Texture::Image(3);
+    let mut left_material = CUBEMAP_MATERIAL;
+    left_material.emissive = Texture::Image(4);
+    let mut top_material = CUBEMAP_MATERIAL;
+    top_material.emissive = Texture::Image(5);
+    let mut bottom_material = CUBEMAP_MATERIAL;
+    bottom_material.emissive = Texture::Image(6);
+
+    let transform = Transform {
+        scale: Vec3::splat(10000.0),
+        ..Default::default()
+    };
+    let matrix = transform.compute_matrix();
+
+    let bottom_left_front = matrix * Vec4::new(-0.5, -0.5, 0.5, 1.0);
+    let top_left_front = matrix * Vec4::new(-0.5, 0.5, 0.5, 1.0);
+    let top_right_front = matrix * Vec4::new(0.5, 0.5, 0.5, 1.0);
+    let bottom_right_front = matrix * Vec4::new(0.5, -0.5, 0.5, 1.0);
+    let bottom_left_back = matrix * Vec4::new(-0.5, -0.5, -0.5, 1.0);
+    let top_left_back = matrix * Vec4::new(-0.5, 0.5, -0.5, 1.0);
+    let top_right_back = matrix * Vec4::new(0.5, 0.5, -0.5, 1.0);
+    let bottom_right_back = matrix * Vec4::new(0.5, -0.5, -0.5, 1.0);
+
+    front.indices.push((0, 1, 2));
+    front.indices.push((0, 2, 3));
+    back.indices.push((0, 1, 2));
+    back.indices.push((0, 2, 3));
+    right.indices.push((0, 1, 2));
+    right.indices.push((0, 2, 3));
+    left.indices.push((0, 1, 2));
+    left.indices.push((0, 2, 3));
+    top.indices.push((0, 1, 2));
+    top.indices.push((0, 2, 3));
+    bottom.indices.push((0, 1, 2));
+    bottom.indices.push((0, 2, 3));
+
+    front.verts.push((
+        bottom_left_front.x,
+        bottom_left_front.y,
+        bottom_left_front.z,
+    ));
+    front.verts.push((
+        bottom_right_front.x,
+        bottom_right_front.y,
+        bottom_right_front.z,
+    ));
+    front
+        .verts
+        .push((top_right_front.x, top_right_front.y, top_right_front.z));
+    front
+        .verts
+        .push((top_left_front.x, top_left_front.y, top_left_front.z));
+    front.tex_coords.push(Vec2::new(0.0, 0.0));
+    front.tex_coords.push(Vec2::new(1.0, 0.0));
+    front.tex_coords.push(Vec2::new(1.0, 1.0));
+    front.tex_coords.push(Vec2::new(0.0, 1.0));
+
+    back.verts.push((
+        bottom_right_back.x,
+        bottom_right_back.y,
+        bottom_right_back.z,
+    ));
+    back.verts
+        .push((bottom_left_back.x, bottom_left_back.y, bottom_left_back.z));
+    back.verts
+        .push((top_left_back.x, top_left_back.y, top_left_back.z));
+    back.verts
+        .push((top_right_back.x, top_right_back.y, top_right_back.z));
+    back.tex_coords.push(Vec2::new(0.0, 0.0));
+    back.tex_coords.push(Vec2::new(1.0, 0.0));
+    back.tex_coords.push(Vec2::new(1.0, 1.0));
+    back.tex_coords.push(Vec2::new(0.0, 1.0));
+
+    right.verts.push((
+        bottom_right_front.x,
+        bottom_right_front.y,
+        bottom_right_front.z,
+    ));
+    right.verts.push((
+        bottom_right_back.x,
+        bottom_right_back.y,
+        bottom_right_back.z,
+    ));
+    right
+        .verts
+        .push((top_right_back.x, top_right_back.y, top_right_back.z));
+    right
+        .verts
+        .push((top_right_front.x, top_right_front.y, top_right_front.z));
+    right.tex_coords.push(Vec2::new(0.0, 0.0));
+    right.tex_coords.push(Vec2::new(1.0, 0.0));
+    right.tex_coords.push(Vec2::new(1.0, 1.0));
+    right.tex_coords.push(Vec2::new(0.0, 1.0));
+
+    left.verts
+        .push((bottom_left_back.x, bottom_left_back.y, bottom_left_back.z));
+    left.verts.push((
+        bottom_left_front.x,
+        bottom_left_front.y,
+        bottom_left_front.z,
+    ));
+    left.verts
+        .push((top_left_front.x, top_left_front.y, top_left_front.z));
+    left.verts
+        .push((top_left_back.x, top_left_back.y, top_left_back.z));
+    left.tex_coords.push(Vec2::new(0.0, 0.0));
+    left.tex_coords.push(Vec2::new(1.0, 0.0));
+    left.tex_coords.push(Vec2::new(1.0, 1.0));
+    left.tex_coords.push(Vec2::new(0.0, 1.0));
+
+    top.verts
+        .push((top_left_front.x, top_left_front.y, top_left_front.z));
+    top.verts
+        .push((top_right_front.x, top_right_front.y, top_right_front.z));
+    top.verts
+        .push((top_right_back.x, top_right_back.y, top_right_back.z));
+    top.verts
+        .push((top_left_back.x, top_left_back.y, top_left_back.z));
+    top.tex_coords.push(Vec2::new(0.0, 0.0));
+    top.tex_coords.push(Vec2::new(1.0, 0.0));
+    top.tex_coords.push(Vec2::new(1.0, 1.0));
+    top.tex_coords.push(Vec2::new(0.0, 1.0));
+
+    bottom
+        .verts
+        .push((bottom_left_back.x, bottom_left_back.y, bottom_left_back.z));
+    bottom.verts.push((
+        bottom_right_back.x,
+        bottom_right_back.y,
+        bottom_right_back.z,
+    ));
+    bottom.verts.push((
+        bottom_right_front.x,
+        bottom_right_front.y,
+        bottom_right_front.z,
+    ));
+    bottom.verts.push((
+        bottom_left_front.x,
+        bottom_left_front.y,
+        bottom_left_front.z,
+    ));
+    bottom.tex_coords.push(Vec2::new(0.0, 0.0));
+    bottom.tex_coords.push(Vec2::new(1.0, 0.0));
+    bottom.tex_coords.push(Vec2::new(1.0, 1.0));
+    bottom.tex_coords.push(Vec2::new(0.0, 1.0));
+
+    store.attach_geometry(
+        Geometry::with_material(front_material, GeomInfo::MESH(front)),
+        device,
+        scene,
+    )?;
+    store.attach_geometry(
+        Geometry::with_material(back_material, GeomInfo::MESH(back)),
+        device,
+        scene,
+    )?;
+    store.attach_geometry(
+        Geometry::with_material(right_material, GeomInfo::MESH(right)),
+        device,
+        scene,
+    )?;
+    store.attach_geometry(
+        Geometry::with_material(left_material, GeomInfo::MESH(left)),
+        device,
+        scene,
+    )?;
+    store.attach_geometry(
+        Geometry::with_material(top_material, GeomInfo::MESH(top)),
+        device,
+        scene,
+    )?;
+    store.attach_geometry(
+        Geometry::with_material(bottom_material, GeomInfo::MESH(bottom)),
+        device,
+        scene,
+    )?;
+
+    Ok(())
+}

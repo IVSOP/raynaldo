@@ -61,6 +61,19 @@ impl Storage {
         res
     }
 
+    // TODO retornar mensagens com o path????
+    pub fn load_texture(&mut self, path: &str) -> Result<()> {
+        let texture: Rgba32FImage = ImageReader::open(path)?.decode()?.into_rgba32f();
+        // .expect(format!("texture {} does not exist", path).as_str())
+        // .decode()
+        // .expect(format!("Error decoding texture assets/textures/uv.png").as_str())
+        // .into_rgba32f();
+
+        self.textures.push(texture);
+
+        Ok(())
+    }
+
     // retrieves the base color from a texture
     // u v are actually the uv passed in by embree
     // usually when this is called I already have the material in scope, just pass it in?
