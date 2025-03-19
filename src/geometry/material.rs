@@ -127,7 +127,7 @@ impl Material {
 
     pub const CUBEMAP_MATERIAL: Self = Self {
         color: LinearRgba::BLACK,
-        texture: Texture::Image(0),
+        texture: Texture::Solid(LinearRgba::BLACK),
         specular: LinearRgba::BLACK,
         transmission: LinearRgba::BLACK,
         refraction: 1.0,

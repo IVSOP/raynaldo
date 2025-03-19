@@ -1,4 +1,5 @@
 use crate::common::*;
+use crate::consts::*;
 use crate::geometry::*;
 use bevy_color::LinearRgba;
 use bevy_math::*;
@@ -32,12 +33,6 @@ pub struct Camera {
 pub struct RayInfo {
     pub refraction: f32,
 }
-
-const DEPTH: u32 = 4;
-const EPSILON: f32 = 1e-3;
-const AIR_REFRACT: f32 = 1.00029;
-const COMPARE_ALL_LIGHTS: bool = true;
-const NUM_AREA_LIGHT_TESTS: u32 = 3;
 
 impl Camera {
     pub fn new(pos: Vec3, at_point: Vec3, up: Vec3, w_u32: u32, h_u32: u32, h_fov: f32) -> Self {
@@ -144,7 +139,7 @@ impl Camera {
         store: &Storage,
         depth: u32,
     ) -> LinearRgba {
-        if depth > DEPTH {
+        if depth > Consts::DEPTH {
             return self.background;
         }
 
@@ -203,34 +198,26 @@ impl Camera {
         y: u32,
         scene: &CommittedScene<'_>,
         store: &Storage,
-        spp: u32,
     ) -> LinearRgba {
         let mut base_color = LinearRgba::BLACK;
-        let sppf = 1.0 / spp as f32;
 
-        for _ in 0..spp {
+        for _ in 0..Consts::RAYS_PER_PIXEL {
             let ray = self.generate_ray(x, y, Some((fastrand::f32(), fastrand::f32())));
 
-            base_color += self.trace(ray, scene, store, 0) * sppf;
+            base_color += self.trace(ray, scene, store, 0) * (1.0 / Consts::RAYS_PER_PIXEL as f32);
         }
 
         base_color
     }
 
-    pub fn render(
-        &self,
-        image: &mut Rgb32FImage,
-        scene: &CommittedScene<'_>,
-        store: &Storage,
-        spp: u32,
-    ) {
+    pub fn render(&self, image: &mut Rgb32FImage, scene: &CommittedScene<'_>, store: &Storage) {
         // TODO: add more unsafe to be faster
         let image = Mutex::new(image);
         (0..self.h).into_par_iter().for_each(|y| {
             // wtf this is terrible
             let mut image_slice: Vec<Rgb<f32>> = vec![Rgb::<f32>([0.0, 0.0, 0.0]); self.w as usize];
             for x in 0..self.w {
-                let color = self.render_pixel(x, y, scene, store, spp);
+                let color = self.render_pixel(x, y, scene, store);
                 *image_slice.get_mut(x as usize).unwrap() =
                     Rgb::<f32>([color.red, color.green, color.blue]);
             }
@@ -327,7 +314,7 @@ impl Camera {
         // if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
         // {
         let mut color = LinearRgba::BLACK;
-        for _ in 0..NUM_AREA_LIGHT_TESTS {
+        for _ in 0..Consts::NUM_AREA_LIGHT_TESTS {
             let u = fastrand::f32();
             let v = fastrand::f32();
 
@@ -368,7 +355,7 @@ impl Camera {
                         light.color.green * diff.green,
                         light.color.blue * diff.blue,
                     ) * light_cos
-                        * (1.0 / NUM_AREA_LIGHT_TESTS as f32);
+                        * (1.0 / Consts::NUM_AREA_LIGHT_TESTS as f32);
 
                     // println!("{:?}", color);
                 }
@@ -395,7 +382,7 @@ impl Camera {
 
         let lights = &store.lights;
 
-        if COMPARE_ALL_LIGHTS {
+        if Consts::COMPARE_ALL_LIGHTS {
             // loop over all light sources
             for light in lights.iter() {
                 color += match light.light_type {

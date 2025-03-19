@@ -7,21 +7,20 @@ use geometry::*;
 use image::buffer::ConvertBuffer;
 use image::{Rgb32FImage, RgbImage};
 mod common;
-use std::env;
+// use std::env;
 mod cornell;
 
 mod camera;
 use camera::*;
 
+mod consts;
 mod geometry;
-
-const W: u32 = 640;
-const H: u32 = 640;
+use consts::*;
 
 // tonemapping todo grokado, queria usar o TonyMcMapFace mas nao faco a minima por onde comecar
 pub fn tonemap(image: &mut Rgb32FImage) {
-    for y in 0..H {
-        for x in 0..W {
+    for y in 0..Consts::H {
+        for x in 0..Consts::W {
             let pixel = image.get_pixel_mut(x, y);
             let r = pixel[0];
             let g = pixel[1];
@@ -60,27 +59,17 @@ pub fn tonemap(image: &mut Rgb32FImage) {
 }
 
 fn main() -> anyhow::Result<()> {
-    let args: Vec<String> = env::args().collect();
-
-    let mut rays_per_pixel = 5; // low on purpose for dev speed. use 20 or something
-    if args.len() > 1 {
-        match args[1].parse::<u32>() {
-            Ok(num) => rays_per_pixel = num,
-            _ => {
-                panic!("Provided value {} is not a valid u32", args[1]);
-            }
-        }
-    }
+    // let args: Vec<String> = env::args().collect();
 
     let camera = Camera::new(
-        Vec3::new(280.0, 265.0, -500.0),
-        Vec3::new(280.0, 260.0, 0.0),
+        Consts::CAM_POS,
+        Consts::CAM_LOOKAT,
         Vec3::Y,
-        W,
-        H,
-        60.0_f32.to_radians(),
+        Consts::W,
+        Consts::H,
+        Consts::CAM_FOV,
     );
-    let mut image = Rgb32FImage::new(W, H);
+    let mut image = Rgb32FImage::new(Consts::W, Consts::H);
 
     let device = Device::try_new(None)?;
     let mut scene = Scene::try_new(
@@ -137,7 +126,7 @@ fn main() -> anyhow::Result<()> {
     add_skybox(&mut store, &device, &mut scene)?;
 
     let mut commited_scene = scene.commit()?;
-    camera.render(&mut image, &mut commited_scene, &store, rays_per_pixel);
+    camera.render(&mut image, &mut commited_scene, &store);
 
     tonemap(&mut image);
     let image: RgbImage = image.convert();
