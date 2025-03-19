@@ -6,12 +6,12 @@ pub struct Material {
     pub color: LinearRgba, // ambient / albedo
     // pub emissive: LinearRgba,
     // pub diffuse: LinearRgba,
-    pub specular: LinearRgba, // reflections
+    pub specular: LinearRgba,     // reflections
     pub transmission: LinearRgba, // refractions
     pub refraction: f32,
     pub reflectivity: f32,
     pub transparency: f32,
-    pub texture: Texture, // diffuse
+    pub texture: Texture,  // diffuse
     pub emissive: Texture, // emissive
 }
 
@@ -135,4 +135,11 @@ impl Material {
         transparency: 0.0,
         emissive: Texture::Image(1),
     };
+}
+
+// samples color according to uv and a given texture
+pub fn sample(uv: Vec2, texture: &Rgba32FImage) -> LinearRgba {
+    let color = sample_bilinear(texture, uv.x, uv.y).unwrap();
+
+    LinearRgba::rgb(color[0], color[1], color[2])
 }

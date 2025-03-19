@@ -93,26 +93,37 @@ impl Storage {
         Ok(())
     }
 
-    // retrieves the base color from a texture
-    // u v are actually the uv passed in by embree
-    // usually when this is called I already have the material in scope, just pass it in?
-    pub fn get_color(&self, u: f32, v: f32, geom: &Geometry, prim_id: u32) -> LinearRgba {
-        match geom.material.texture {
-            Texture::Solid(color) => color,
-            Texture::Image(id) => {
-                let texture = self.textures.get(id as usize).unwrap();
-                geom.get_color(u, v, prim_id, texture)
+    // to avoid repetitions, this is more efficient
+    // returns (diff, emissive)
+    // FIX: this code is bad
+    pub fn get_colors(
+        &self,
+        u: f32,
+        v: f32,
+        geom: &Geometry,
+        prim_id: u32,
+    ) -> (LinearRgba, LinearRgba) {
+        if let Texture::Solid(diff) = geom.material.texture {
+            if let Texture::Solid(emissive) = geom.material.emissive {
+                return (diff, emissive);
             }
         }
-    }
 
-    pub fn get_emissive(&self, u: f32, v: f32, geom: &Geometry, prim_id: u32) -> LinearRgba {
-        match geom.material.emissive {
-            Texture::Solid(color) => color,
-            Texture::Image(id) => {
-                let texture = self.textures.get(id as usize).unwrap();
-                geom.get_color(u, v, prim_id, texture)
-            }
-        }
+        // one of the textures is not a solid color
+        // my goal was to only calculate this when needed
+        // but the sampling should also have some unneeded repetitions
+        let uv = geom.compute_uv(u, v, prim_id);
+
+        let diff: LinearRgba = match geom.material.texture {
+            Texture::Solid(diff) => diff,
+            Texture::Image(id) => sample(uv, &self.textures[id as usize]),
+        };
+
+        let emissive: LinearRgba = match geom.material.emissive {
+            Texture::Solid(emissive) => emissive,
+            Texture::Image(id) => sample(uv, &self.textures[id as usize]),
+        };
+
+        (diff, emissive)
     }
 }

@@ -160,15 +160,15 @@ impl Camera {
                 let v = hit.hit.v;
                 let prim_id = hit.hit.primID;
 
-                color += self.direct_lighting(
-                    hit_pos, normal, &material, u, v, geometry, prim_id, scene, store,
-                );
+                let (diff, emissive) = store.get_colors(u, v, geometry, prim_id);
+
+                color += self.direct_lighting(hit_pos, normal, &material, diff, scene, store);
 
                 color += self.reflect_refract(
-                    hit_pos, dir, normal, u, v, geometry, prim_id, refraction, material, depth, scene, store,
+                    hit_pos, dir, normal, diff, refraction, material, depth, scene, store,
                 );
 
-                color += store.get_emissive(u, v, geometry, prim_id);
+                color += emissive;
 
                 // let spec = material.specular;
                 // if spec.red > 0.0 || spec.green > 0.0 || spec.blue > 0.0 {
@@ -240,16 +240,12 @@ impl Camera {
 
     pub fn handle_point_light(
         &self,
-        u: f32,
-        v: f32,
-        geom: &Geometry,
-        prim_id: u32,
+        diff: LinearRgba,
         light: &Light,
         hit_pos: Vec3,
         normal: Vec3,
         light_pos: Vec3,
         scene: &CommittedScene<'_>,
-        store: &Storage,
     ) -> LinearRgba {
         // if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
         // {
@@ -281,7 +277,6 @@ impl Camera {
 
             // we have a direct path to the light, can add direct illumination
             if scene.intersect_1(shadow_ray).unwrap().is_none() {
-                let diff = store.get_color(u, v, geom, prim_id);
                 let color = LinearRgba::rgb(
                     light.color.red * diff.red,
                     light.color.green * diff.green,
@@ -300,16 +295,12 @@ impl Camera {
     // randomly select N points on the light and make them act as individual point lights
     pub fn handle_square_light(
         &self,
-        tex_u: f32,
-        tex_v: f32,
-        geom: &Geometry,
-        prim_id: u32,
+        diff: LinearRgba,
         light: &Light,
         square: &LightQuad,
         hit_pos: Vec3,
         normal: Vec3,
         scene: &CommittedScene<'_>,
-        store: &Storage,
     ) -> LinearRgba {
         // if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
         // {
@@ -349,7 +340,6 @@ impl Camera {
 
                 // we have a direct path to the light, can add direct illumination
                 if scene.intersect_1(shadow_ray).unwrap().is_none() {
-                    let diff = store.get_color(tex_u, tex_v, geom, prim_id);
                     color += LinearRgba::rgb(
                         light.color.red * diff.red,
                         light.color.green * diff.green,
@@ -371,10 +361,7 @@ impl Camera {
         hit_pos: Vec3,
         normal: Vec3,
         material: &Material,
-        u: f32,
-        v: f32,
-        geom: &Geometry,
-        prim_id: u32,
+        diff: LinearRgba,
         scene: &CommittedScene<'_>,
         store: &Storage,
     ) -> LinearRgba {
@@ -387,12 +374,12 @@ impl Camera {
             for light in lights.iter() {
                 color += match light.light_type {
                     LightType::Ambient => self.handle_ambient_light(material, light),
-                    LightType::Point(light_pos) => self.handle_point_light(
-                        u, v, geom, prim_id, light, hit_pos, normal, light_pos, scene, store,
-                    ),
-                    LightType::AreaQuad(ref square) => self.handle_square_light(
-                        u, v, geom, prim_id, light, square, hit_pos, normal, scene, store,
-                    ),
+                    LightType::Point(light_pos) => {
+                        self.handle_point_light(diff, light, hit_pos, normal, light_pos, scene)
+                    }
+                    LightType::AreaQuad(ref square) => {
+                        self.handle_square_light(diff, light, square, hit_pos, normal, scene)
+                    }
                 };
             }
         } else {
@@ -400,12 +387,12 @@ impl Camera {
             let light = lights.get(light_i).unwrap();
             color += match light.light_type {
                 LightType::Ambient => self.handle_ambient_light(material, light),
-                LightType::Point(light_pos) => self.handle_point_light(
-                    u, v, geom, prim_id, light, hit_pos, normal, light_pos, scene, store,
-                ),
-                LightType::AreaQuad(ref square) => self.handle_square_light(
-                    u, v, geom, prim_id, light, square, hit_pos, normal, scene, store,
-                ),
+                LightType::Point(light_pos) => {
+                    self.handle_point_light(diff, light, hit_pos, normal, light_pos, scene)
+                }
+                LightType::AreaQuad(ref square) => {
+                    self.handle_square_light(diff, light, square, hit_pos, normal, scene)
+                }
             };
 
             color *= lights.len() as f32;
@@ -565,10 +552,7 @@ impl Camera {
         hit: Vec3,
         incident_dir: Vec3,
         normal: Vec3,
-        u: f32,
-        v: f32,
-        geom: &Geometry,
-        prim_id: u32,
+        diff: LinearRgba,
         ray_refraction: f32,
         material: &Material,
         depth: u32,
@@ -684,7 +668,7 @@ impl Camera {
             } else {
                 (1.0 - reflect) * diffuse_strength // Diffuse takes what's left after reflection
             };
-    
+
             if diffuse_weight > 0.0 {
                 for _ in 0..Consts::NUM_SCATTER {
                     let scatter_dir = sample_cos_hemisphere(normal);
@@ -703,15 +687,16 @@ impl Camera {
                     let scattered_color = self.trace(scatter_ray, scene, store, depth + 1);
                     let cos_theta = scatter_dir.dot(normal).max(0.0);
                     // TODO what color from the current material should I be using???
-                    let sample_color = store.get_color(u, v, geom, prim_id);
                     color += LinearRgba::rgb(
-                        scattered_color.red * sample_color.red,
-                        scattered_color.green * sample_color.green,
-                        scattered_color.blue * sample_color.blue,
-                    ) * diffuse_weight * cos_theta * (1.0 / Consts::NUM_SCATTER as f32);
+                        scattered_color.red * diff.red,
+                        scattered_color.green * diff.green,
+                        scattered_color.blue * diff.blue,
+                    ) * diffuse_weight
+                        * cos_theta
+                        * (1.0 / Consts::NUM_SCATTER as f32);
                 }
             }
-        } 
+        }
 
         color
     }
@@ -723,11 +708,11 @@ fn sample_cos_hemisphere(normal: Vec3) -> Vec3 {
     let e2 = fastrand::f32();
 
     // Cosine-weighted sampling in local space (normal = (0, 0, 1))
-    let r = e1.sqrt();               // Radius on the unit disk
+    let r = e1.sqrt(); // Radius on the unit disk
     let phi = 2.0 * std::f32::consts::PI * e2; // Azimuthal angle
     let x = r * phi.cos();
     let y = r * phi.sin();
-    let z = (1.0 - e1).sqrt();       // Ensures unit length and cosine weighting
+    let z = (1.0 - e1).sqrt(); // Ensures unit length and cosine weighting
 
     // Local direction
     let local_dir = Vec3::new(x, y, z);

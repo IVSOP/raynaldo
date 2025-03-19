@@ -54,13 +54,11 @@ impl Geometry {
         Self { material, info }
     }
 
-    // samples color according to uv, prim_id, and a given texture
     // u v are actually the uv passed in by embree
-    pub fn get_color(&self, u: f32, v: f32, prim_id: u32, texture: &Rgba32FImage) -> LinearRgba {
-        let w = 1.0 - u - v;
-
+    pub fn compute_uv(&self, u: f32, v: f32, prim_id: u32) -> Vec2 {
         match self.info {
             GeomInfo::MESH(ref mesh) => {
+                let w = 1.0 - u - v;
                 let id = prim_id as usize;
 
                 // get the indices for this triangle
@@ -86,11 +84,9 @@ impl Geometry {
                 let actual_v = 1.0
                     - (vertex_uv_0.y * w + vertex_uv_1.y * u + vertex_uv_2.y * v).clamp(0.0, 1.0);
 
-                let color = sample_bilinear(texture, actual_u, actual_v).unwrap();
-
-                LinearRgba::rgb(color[0], color[1], color[2])
+                Vec2::new(actual_u, actual_v)
             }
-            _ => LinearRgba::RED,
+            _ => Vec2::ZERO, // TODO: how do I implement this
         }
     }
 }
