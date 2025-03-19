@@ -37,6 +37,18 @@ impl Default for Mesh {
     }
 }
 
+impl Mesh {
+    pub fn transform(&mut self, matrix: Mat4) {
+        for vert in &mut self.verts {
+            let pos = Vec4::new(vert.0, vert.1, vert.2, 1.0);
+            let new_pos = matrix * pos;
+            vert.0 = new_pos.x;
+            vert.1 = new_pos.y;
+            vert.2 = new_pos.z;
+        }
+    }
+}
+
 #[derive(Clone)]
 pub enum GeomInfo {
     MESH(Mesh),
@@ -87,6 +99,17 @@ impl Geometry {
                 Vec2::new(actual_u, actual_v)
             }
             _ => Vec2::ZERO, // TODO: how do I implement this
+        }
+    }
+
+    pub fn transform(&mut self, matrix: Mat4) {
+        match self.info {
+            GeomInfo::MESH(ref mut mesh) => {
+                mesh.transform(matrix);
+            }
+            _ => {
+                panic!("transform for spheres not implemented yet");
+            }
         }
     }
 }

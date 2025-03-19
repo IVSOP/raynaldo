@@ -239,6 +239,22 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     store.attach_geometry(mirror, &device, &mut scene)?;
     store.attach_geometry(sphere_geometry, &device, &mut scene)?;
 
+    let (cube_gltf_doc, cube_gltf_buff, _) = gltf::import("assets/cube.glb")?;
+    let cube_mesh = get_gltf_meshes(&cube_gltf_doc, &cube_gltf_buff)[0].clone();
+
+    let transform = Transform {
+        translation: Vec3::new(350.0, 50.0, 75.0),
+        scale: Vec3::splat(50.0),
+        ..Transform::default()
+    };
+    let mut bright_red_cube = cube_mesh.clone();
+    bright_red_cube.transform(transform.compute_matrix());
+    store.attach_geometry(
+        Geometry::with_material(Material::EMISSIVE_MATERIAL, GeomInfo::MESH(bright_red_cube)),
+        &device,
+        &mut scene,
+    )?;
+
     let ambient = Light {
         light_type: LightType::Ambient,
         color: LinearRgba::rgb(0.07, 0.07, 0.07), // color: LinearRgba::rgb(1.0, 1.0, 1.0)
@@ -278,17 +294,13 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     Ok(())
 }
 
-// WARNING: adds meshes one by one. ignores children. assumes all primitives are triangles
-pub fn add_gltf(
-    store: &mut Storage,
-    device: &Device,
-    mut scene: &mut Scene<'_>,
+// WARN: adds meshes one by one. ignores children. assumes all primitives are triangles
+pub fn get_gltf_meshes(
     gltf_doc: &gltf::Document,
     gltf_buff: &Vec<gltf::buffer::Data>,
-    transform: &Transform,
-    material: Material,
-) -> Result<()> {
-    let matrix = transform.compute_matrix();
+    // transform: &Transform,
+) -> Vec<Mesh> {
+    // let matrix = transform.compute_matrix();
 
     // for scene in gltf.scenes() {
     //     for node in scene.nodes() {
@@ -299,7 +311,11 @@ pub fn add_gltf(
     //     }
     // }
 
-    for mesh in gltf_doc.meshes() {
+    let meshes_iter = gltf_doc.meshes();
+
+    let mut meshes: Vec<Mesh> = Vec::with_capacity(meshes_iter.len());
+
+    for mesh in meshes_iter {
         for primitive in mesh.primitives() {
             let mut verts: Vec<(f32, f32, f32)> = Vec::new();
             let mut indices: Vec<u32> = Vec::new();
@@ -308,14 +324,15 @@ pub fn add_gltf(
             let reader = primitive.reader(|buffer| Some(&gltf_buff[buffer.index()]));
             if let Some(iter) = reader.read_positions() {
                 for vertex_position in iter {
-                    let pos = Vec4::new(
-                        vertex_position[0],
-                        vertex_position[1],
-                        vertex_position[2],
-                        1.0,
-                    );
-                    let transformed = matrix * pos;
-                    verts.push((transformed.x, transformed.y, transformed.z));
+                    // let pos = Vec4::new(
+                    //     vertex_position[0],
+                    //     vertex_position[1],
+                    //     vertex_position[2],
+                    //     1.0,
+                    // );
+                    // let transformed = matrix * pos;
+                    // verts.push((transformed.x, transformed.y, transformed.z));
+                    verts.push((vertex_position[0], vertex_position[1], vertex_position[2]));
                 }
             }
             if let Some(iter) = reader.read_indices() {
@@ -370,9 +387,26 @@ pub fn add_gltf(
                 indices: triangle_indices,
                 tex_coords,
             };
-            let geometry = Geometry::with_material(material.clone(), GeomInfo::MESH(new_mesh));
-            let _ = store.attach_geometry(geometry, &device, &mut scene)?;
+            meshes.push(new_mesh);
         }
+    }
+
+    meshes
+}
+
+pub fn add_gltf(
+    store: &mut Storage,
+    device: &Device,
+    mut scene: &mut Scene<'_>,
+    gltf_doc: &gltf::Document,
+    gltf_buff: &Vec<gltf::buffer::Data>,
+    matrix: Mat4,
+    material: &Material,
+) -> Result<()> {
+    for mut mesh in get_gltf_meshes(gltf_doc, gltf_buff) {
+        mesh.transform(matrix);
+        let geometry = Geometry::with_material(material.clone(), GeomInfo::MESH(mesh));
+        let _ = store.attach_geometry(geometry, &device, &mut scene)?;
     }
 
     Ok(())

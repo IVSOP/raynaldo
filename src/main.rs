@@ -91,27 +91,11 @@ fn main() -> anyhow::Result<()> {
     ])?;
     cornell_box(&mut store, &device, &mut scene)?;
 
-    // let (gltf_doc, gltf_buff, _) = gltf::import("assets/magujo/suzanne.glb")?;
-    // let transform = Transform {
-    //     translation: Vec3::new(450.0, 50.0, 150.0),
-    //     rotation: Quat::from_rotation_y(220.0_f32.to_radians()),
-    //     scale: Vec3::splat(50.0),
-    // };
-    // add_gltf(
-    //     &mut store,
-    //     &device,
-    //     &mut scene,
-    //     &gltf_doc,
-    //     &gltf_buff,
-    //     &transform,
-    //     Material::GLASS_MATERIAL,
-    // )?;
-
-    let (gltf_doc, gltf_buff, _) = gltf::import("assets/cube.glb")?;
+    let (gltf_doc, gltf_buff, _) = gltf::import("assets/magujo/suzanne.glb")?;
     let transform = Transform {
-        translation: Vec3::new(350.0, 50.0, 75.0),
+        translation: Vec3::new(450.0, 50.0, 150.0),
+        rotation: Quat::from_rotation_y(220.0_f32.to_radians()),
         scale: Vec3::splat(50.0),
-        ..Transform::default()
     };
     add_gltf(
         &mut store,
@@ -119,8 +103,8 @@ fn main() -> anyhow::Result<()> {
         &mut scene,
         &gltf_doc,
         &gltf_buff,
-        &transform,
-        Material::EMISSIVE_MATERIAL,
+        transform.compute_matrix(),
+        &Material::MIRROR_MATERIAL,
     )?;
 
     add_skybox(&mut store, &device, &mut scene)?;
