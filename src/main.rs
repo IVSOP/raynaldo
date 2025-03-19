@@ -92,13 +92,14 @@ fn main() -> anyhow::Result<()> {
     )?;
 
     let mut store = Storage::new();
-    // TODO: THIS IS VEEEEEERY SLOW. need to add a batch operation that loads images one by one and then does decode().into() async
-    store.load_texture("assets/textures/skybox/front.jpg")?;
-    store.load_texture("assets/textures/skybox/back.jpg")?;
-    store.load_texture("assets/textures/skybox/right.jpg")?;
-    store.load_texture("assets/textures/skybox/left.jpg")?;
-    store.load_texture("assets/textures/skybox/top.jpg")?;
-    store.load_texture("assets/textures/skybox/bottom.jpg")?;
+    store.load_textures_batch(vec![
+        "assets/textures/skybox/front.jpg",
+        "assets/textures/skybox/back.jpg",
+        "assets/textures/skybox/right.jpg",
+        "assets/textures/skybox/left.jpg",
+        "assets/textures/skybox/top.jpg",
+        "assets/textures/skybox/bottom.jpg",
+    ])?;
     cornell_box(&mut store, &device, &mut scene)?;
 
     let (gltf_doc, gltf_buff, _) = gltf::import("assets/magujo/suzanne.glb")?;

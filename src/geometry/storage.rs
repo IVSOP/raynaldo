@@ -1,5 +1,6 @@
 use image::ImageReader;
 use image::Rgba32FImage;
+use rayon::prelude::*;
 use std::collections::HashMap;
 
 use super::*;
@@ -70,6 +71,24 @@ impl Storage {
         // .into_rgba32f();
 
         self.textures.push(texture);
+
+        Ok(())
+    }
+
+    // I assume opening the file is very fast but decoding() and into_rgba32f() are slow, so I just made the whole thing parallel
+    // cursed, does not error out instantly
+    pub fn load_textures_batch(&mut self, paths: Vec<&str>) -> Result<()> {
+        let new_textures: Vec<Result<Rgba32FImage>> = paths
+            .par_iter() // Parallel iterator
+            .map(|&path| {
+                // Load and decode each texture in parallel
+                Ok(ImageReader::open(path)?.decode()?.into_rgba32f())
+            })
+            .collect(); // Collect results into a Vec
+
+        for texture in new_textures {
+            self.textures.push(texture?);
+        }
 
         Ok(())
     }
