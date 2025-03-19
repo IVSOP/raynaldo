@@ -15,18 +15,20 @@ impl Consts {
     pub const DEPTH: u32 = 4;
     pub const COMPARE_ALL_LIGHTS: bool = false;
     pub const NUM_AREA_LIGHT_TESTS: u32 = 1;
-    pub const RAYS_PER_PIXEL: u32 = 5;
+    pub const RAYS_PER_PIXEL: u32 = 10;
+    pub const NUM_SCATTER: u32 = 1;
 }
 
 #[cfg(not(debug_assertions))]
 impl Consts {
-    pub const W: u32 = 2560;
-    pub const H: u32 = 1440;
+    pub const W: u32 = 1920; // 2560;
+    pub const H: u32 = 1080; // 1440;
     pub const CAM_POS: Vec3 = Vec3::new(280.0, 265.0, -500.0);
     pub const CAM_LOOKAT: Vec3 = Vec3::new(280.0, 260.0, 0.0);
-    pub const CAM_FOV: f32 = 90.0_f32.to_radians();
+    pub const CAM_FOV: f32 = 65.0_f32.to_radians();
     pub const DEPTH: u32 = 5;
     pub const COMPARE_ALL_LIGHTS: bool = true;
     pub const NUM_AREA_LIGHT_TESTS: u32 = 4;
     pub const RAYS_PER_PIXEL: u32 = 20;
+    pub const NUM_SCATTER: u32 = 5;
 }

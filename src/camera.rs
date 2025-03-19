@@ -165,7 +165,7 @@ impl Camera {
                 );
 
                 color += self.reflect_refract(
-                    hit_pos, dir, normal, refraction, material, depth, scene, store,
+                    hit_pos, dir, normal, u, v, geometry, prim_id, refraction, material, depth, scene, store,
                 );
 
                 color += store.get_emissive(u, v, geometry, prim_id);
@@ -533,6 +533,7 @@ impl Camera {
     //     )
     // }
 
+    /// use schlick approximation to compute fraction of light specularly reflected at a surface (fresnel)
     pub fn compute_reflection_coeff(
         &self,
         incident_dir: Vec3,
@@ -541,7 +542,6 @@ impl Camera {
         n2: f32, // refraction being entered
         material: &Material,
     ) -> f32 {
-        // Schlick aproximation
         let mut r0 = (n1 - n2) / (n1 + n2);
         r0 *= r0;
         let mut cos_x = -normal.dot(incident_dir);
@@ -565,6 +565,10 @@ impl Camera {
         hit: Vec3,
         incident_dir: Vec3,
         normal: Vec3,
+        u: f32,
+        v: f32,
+        geom: &Geometry,
+        prim_id: u32,
         ray_refraction: f32,
         material: &Material,
         depth: u32,
@@ -592,8 +596,9 @@ impl Camera {
         let reflect = self.compute_reflection_coeff(incident_dir, normal, n1, n2, material);
         let refract = 1.0 - reflect;
 
+        // REFLECTION, for materials with reflectivity
         let mut color = LinearRgba::BLACK;
-        if reflect > 0.0 {
+        if reflect > 0.0 && material.reflectivity > 0.0 {
             let refdir = incident_dir.reflect(normal);
 
             let mut offset = EPSILON * normal;
@@ -621,9 +626,10 @@ impl Camera {
                 material.specular.red * color.red,
                 material.specular.green * color.green,
                 material.specular.blue * color.blue,
-            ) * reflect; // TODO: multiply by reflectivity of the material????????
+            ) * reflect; // no need to multiply by reflectivity of the material, fresnel already takes it into account
         }
 
+        // REFRACTION, for materials with transparency
         if refract > 0.0 && material.transparency > 0.0 {
             let eta = n1 / n2; // Ratio of IORs
             let facing_normal = if incident_dir.dot(normal) < 0.0 {
@@ -663,9 +669,78 @@ impl Camera {
                     material.transmission.blue * color.blue,
                 ) * material.transparency
                     * refract;
+                // here I use transparency to imply some of the light is lost/absorbed when refracting
+                // this is technically not needed and not correct, but beer's law is not yet implemented so this will have to do for now
             }
         }
 
+        // SCATTERING
+        // WARN: limited to the first ever hit
+        // uses what's left after reflection (like refraction), but assumes the material does not refract
+        if depth == 0 {
+            let diffuse_strength = 1.0; // TEMPORARY
+            let diffuse_weight = if material.transparency > 0.0 {
+                0.0
+            } else {
+                (1.0 - reflect) * diffuse_strength // Diffuse takes what's left after reflection
+            };
+    
+            if diffuse_weight > 0.0 {
+                for _ in 0..Consts::NUM_SCATTER {
+                    let scatter_dir = sample_cos_hemisphere(normal);
+                    let offset = EPSILON * normal;
+                    let origin = hit + offset;
+                    let scatter_ray = RTCRay {
+                        org_x: origin.x,
+                        org_y: origin.y,
+                        org_z: origin.z,
+                        dir_x: scatter_dir.x,
+                        dir_y: scatter_dir.y,
+                        dir_z: scatter_dir.z,
+                        id: n1.to_bits(), // Stays in same medium, it's kind of a second reflection
+                        ..default()
+                    };
+                    let scattered_color = self.trace(scatter_ray, scene, store, depth + 1);
+                    let cos_theta = scatter_dir.dot(normal).max(0.0);
+                    // TODO what color from the current material should I be using???
+                    let sample_color = store.get_color(u, v, geom, prim_id);
+                    color += LinearRgba::rgb(
+                        scattered_color.red * sample_color.red,
+                        scattered_color.green * sample_color.green,
+                        scattered_color.blue * sample_color.blue,
+                    ) * diffuse_weight * cos_theta * (1.0 / Consts::NUM_SCATTER as f32);
+                }
+            }
+        } 
+
         color
     }
+}
+
+fn sample_cos_hemisphere(normal: Vec3) -> Vec3 {
+    // Two random numbers in [0, 1)
+    let e1 = fastrand::f32();
+    let e2 = fastrand::f32();
+
+    // Cosine-weighted sampling in local space (normal = (0, 0, 1))
+    let r = e1.sqrt();               // Radius on the unit disk
+    let phi = 2.0 * std::f32::consts::PI * e2; // Azimuthal angle
+    let x = r * phi.cos();
+    let y = r * phi.sin();
+    let z = (1.0 - e1).sqrt();       // Ensures unit length and cosine weighting
+
+    // Local direction
+    let local_dir = Vec3::new(x, y, z);
+
+    // Transform to world space using an orthonormal basis
+    let (u, v, w) = orthonormal_basis(normal);
+    u * local_dir.x + v * local_dir.y + w * local_dir.z
+}
+
+fn orthonormal_basis(normal: Vec3) -> (Vec3, Vec3, Vec3) {
+    let w = normal; // Normal is already normalized
+    let a = if w.x.abs() > 0.9 { Vec3::Y } else { Vec3::X }; // Avoid parallel vectors
+    let v = w.cross(a).normalize();
+    let u = w.cross(v).normalize();
+    (u, v, w)
 }

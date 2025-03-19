@@ -91,21 +91,21 @@ fn main() -> anyhow::Result<()> {
     ])?;
     cornell_box(&mut store, &device, &mut scene)?;
 
-    let (gltf_doc, gltf_buff, _) = gltf::import("assets/magujo/suzanne.glb")?;
-    let transform = Transform {
-        translation: Vec3::new(450.0, 50.0, 150.0),
-        rotation: Quat::from_rotation_y(220.0_f32.to_radians()),
-        scale: Vec3::splat(50.0),
-    };
-    add_gltf(
-        &mut store,
-        &device,
-        &mut scene,
-        &gltf_doc,
-        &gltf_buff,
-        &transform,
-        Material::GLASS_MATERIAL,
-    )?;
+    // let (gltf_doc, gltf_buff, _) = gltf::import("assets/magujo/suzanne.glb")?;
+    // let transform = Transform {
+    //     translation: Vec3::new(450.0, 50.0, 150.0),
+    //     rotation: Quat::from_rotation_y(220.0_f32.to_radians()),
+    //     scale: Vec3::splat(50.0),
+    // };
+    // add_gltf(
+    //     &mut store,
+    //     &device,
+    //     &mut scene,
+    //     &gltf_doc,
+    //     &gltf_buff,
+    //     &transform,
+    //     Material::GLASS_MATERIAL,
+    // )?;
 
     let (gltf_doc, gltf_buff, _) = gltf::import("assets/cube.glb")?;
     let transform = Transform {

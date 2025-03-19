@@ -3,16 +3,16 @@ use super::*;
 
 #[derive(Debug, Clone)]
 pub struct Material {
-    pub color: LinearRgba,
+    pub color: LinearRgba, // ambient / albedo
     // pub emissive: LinearRgba,
     // pub diffuse: LinearRgba,
-    pub specular: LinearRgba,
-    pub transmission: LinearRgba,
+    pub specular: LinearRgba, // reflections
+    pub transmission: LinearRgba, // refractions
     pub refraction: f32,
     pub reflectivity: f32,
     pub transparency: f32,
-    pub texture: Texture,
-    pub emissive: Texture,
+    pub texture: Texture, // diffuse
+    pub emissive: Texture, // emissive
 }
 
 impl Default for Material {
