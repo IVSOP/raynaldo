@@ -6,11 +6,13 @@ use embree4_rs::{
     Device, Scene,
     geometry::{SphereGeometry, TriangleMeshGeometry},
 };
+use image::{Rgba32FImage, imageops::sample_bilinear};
 
 mod storage;
-use image::Rgba32FImage;
-use image::imageops::sample_bilinear;
 pub use storage::*;
+
+mod material;
+pub use material::*;
 
 #[derive(Clone)]
 pub struct Sphere {
@@ -97,36 +99,6 @@ impl Geometry {
 pub enum Texture {
     Solid(LinearRgba),
     Image(u32), // an id
-}
-
-#[derive(Debug, Clone)]
-pub struct Material {
-    pub color: LinearRgba,
-    // pub emissive: LinearRgba,
-    // pub diffuse: LinearRgba,
-    pub specular: LinearRgba,
-    pub transmission: LinearRgba,
-    pub refraction: f32,
-    pub reflectivity: f32,
-    pub transparency: f32,
-    pub texture: Texture,
-    pub emissive: Texture,
-}
-
-impl Default for Material {
-    fn default() -> Self {
-        Self {
-            color: LinearRgba::RED,
-            // diffuse: LinearRgba::RED,
-            specular: LinearRgba::RED,
-            transmission: LinearRgba::RED,
-            refraction: 1.0,
-            reflectivity: 0.0,
-            transparency: 0.0,
-            texture: Texture::Solid(LinearRgba::RED),
-            emissive: Texture::Solid(LinearRgba::NONE),
-        }
-    }
 }
 
 pub struct Light {

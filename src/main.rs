@@ -114,7 +114,7 @@ fn main() -> anyhow::Result<()> {
         &gltf_doc,
         &gltf_buff,
         &transform,
-        GLASS_MATERIAL,
+        Material::GLASS_MATERIAL,
     )?;
 
     let (gltf_doc, gltf_buff, _) = gltf::import("assets/cube.glb")?;
@@ -130,7 +130,7 @@ fn main() -> anyhow::Result<()> {
         &gltf_doc,
         &gltf_buff,
         &transform,
-        EMISSIVE_MATERIAL,
+        Material::EMISSIVE_MATERIAL,
     )?;
 
     add_skybox(&mut store, &device, &mut scene)?;
