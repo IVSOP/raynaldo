@@ -326,6 +326,7 @@ impl Camera {
     ) -> LinearRgba {
         // if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
         // {
+        let mut color = LinearRgba::BLACK;
         for _ in 0..NUM_AREA_LIGHT_TESTS {
             let u = fastrand::f32();
             let v = fastrand::f32();
@@ -362,7 +363,7 @@ impl Camera {
                 // we have a direct path to the light, can add direct illumination
                 if scene.intersect_1(shadow_ray).unwrap().is_none() {
                     let diff = store.get_color(tex_u, tex_v, geom, prim_id);
-                    let color = LinearRgba::rgb(
+                    color += LinearRgba::rgb(
                         light.color.red * diff.red,
                         light.color.green * diff.green,
                         light.color.blue * diff.blue,
@@ -370,13 +371,11 @@ impl Camera {
                         * (1.0 / NUM_AREA_LIGHT_TESTS as f32);
 
                     // println!("{:?}", color);
-                    return color;
                 }
             }
         }
-        // }
 
-        LinearRgba::BLACK
+        color
     }
 
     // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
