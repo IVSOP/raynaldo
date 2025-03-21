@@ -6,6 +6,7 @@ use image::RgbImage;
 use image::buffer::ConvertBuffer;
 use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
+use std::io::*;
 
 mod common;
 mod cornell;
@@ -82,7 +83,8 @@ fn main() -> anyhow::Result<()> {
                 break;
             }
 
-            println!("Progress: {:.2}%", progress);
+            print!("Progress: {:.2}%\r", progress);
+            std::io::stdout().flush().unwrap();
             std::thread::sleep(std::time::Duration::from_secs(1));
         }
     });
