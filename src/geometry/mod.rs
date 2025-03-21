@@ -56,10 +56,7 @@ impl Geometry {
                 let w = 1.0 - u - v;
 
                 // get the indices for this triangle
-                let indices = mesh.indices[prim_id as usize];
-                let i0 = indices.0 as usize;
-                let i1 = indices.1 as usize;
-                let i2 = indices.2 as usize;
+                let (i0, i1, i2) = mesh.indices[prim_id as usize];
 
                 // // position of the vertices
                 // let p0 = mesh.verts[i0];
@@ -67,9 +64,9 @@ impl Geometry {
                 // let p2 = mesh.verts[i2];
 
                 // uv of the vertices
-                let vertex_uv_0 = mesh.tex_coords[i0];
-                let vertex_uv_1 = mesh.tex_coords[i1];
-                let vertex_uv_2 = mesh.tex_coords[i2];
+                let vertex_uv_0 = mesh.tex_coords[i0 as usize];
+                let vertex_uv_1 = mesh.tex_coords[i1 as usize];
+                let vertex_uv_2 = mesh.tex_coords[i2 as usize];
 
                 let actual_u =
                     (vertex_uv_0.x * w + vertex_uv_1.x * u + vertex_uv_2.x * v).clamp(0.0, 1.0);
