@@ -1,12 +1,5 @@
-// use crate::common::*;
-use anyhow::Result;
 use bevy_color::LinearRgba;
 use bevy_math::*;
-use embree4_rs::{
-    Device, Scene,
-    geometry::{SphereGeometry, TriangleMeshGeometry},
-};
-use image::{Rgba32FImage, imageops::sample_bilinear};
 
 mod storage;
 pub use storage::*;
@@ -15,29 +8,19 @@ mod material;
 pub use material::*;
 
 #[derive(Clone)]
-pub struct Sphere {
+pub struct SphereGeometry {
     pub radius: f32,
     pub center: Vec3,
 }
 
-#[derive(Clone)]
-pub struct Mesh {
+#[derive(Clone, Default)]
+pub struct MeshGeometry {
     pub verts: Vec<(f32, f32, f32)>,
     pub indices: Vec<(u32, u32, u32)>,
     pub tex_coords: Vec<Vec2>, // not sent to embree
 }
 
-impl Default for Mesh {
-    fn default() -> Self {
-        Self {
-            verts: Vec::new(),
-            indices: Vec::new(),
-            tex_coords: Vec::new(),
-        }
-    }
-}
-
-impl Mesh {
+impl MeshGeometry {
     pub fn transform(&mut self, matrix: Mat4) {
         for vert in &mut self.verts {
             let pos = Vec4::new(vert.0, vert.1, vert.2, 1.0);
@@ -51,8 +34,8 @@ impl Mesh {
 
 #[derive(Clone)]
 pub enum GeomInfo {
-    MESH(Mesh),
-    SPHERE(Sphere),
+    Mesh(MeshGeometry),
+    Sphere(SphereGeometry),
 }
 
 #[derive(Clone)]
@@ -69,12 +52,11 @@ impl Geometry {
     // u v are actually the uv passed in by embree
     pub fn compute_uv(&self, u: f32, v: f32, prim_id: u32) -> Vec2 {
         match self.info {
-            GeomInfo::MESH(ref mesh) => {
+            GeomInfo::Mesh(ref mesh) => {
                 let w = 1.0 - u - v;
-                let id = prim_id as usize;
 
                 // get the indices for this triangle
-                let indices = mesh.indices[id];
+                let indices = mesh.indices[prim_id as usize];
                 let i0 = indices.0 as usize;
                 let i1 = indices.1 as usize;
                 let i2 = indices.2 as usize;
@@ -104,7 +86,7 @@ impl Geometry {
 
     pub fn transform(&mut self, matrix: Mat4) {
         match self.info {
-            GeomInfo::MESH(ref mut mesh) => {
+            GeomInfo::Mesh(ref mut mesh) => {
                 mesh.transform(matrix);
             }
             _ => {

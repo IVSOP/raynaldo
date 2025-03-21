@@ -1,14 +1,12 @@
 use crate::common::*;
 use crate::consts::*;
 use crate::geometry::*;
-use bevy_color::LinearRgba;
+use bevy_color::{ColorToComponents, LinearRgba};
 use bevy_math::*;
 use embree4_rs::*;
 use embree4_sys::RTCRay;
 use image::Rgb;
 use image::Rgb32FImage;
-use rayon::iter::*;
-use std::sync::Mutex;
 
 #[derive(Debug)]
 pub struct Camera {
@@ -136,17 +134,19 @@ impl Camera {
         &self,
         ray: RTCRay,
         scene: &CommittedScene<'_>,
-        store: &Storage,
+        store: &SceneStorage,
         depth: u32,
     ) -> LinearRgba {
         if depth > Consts::DEPTH {
             return self.background;
         }
 
-        match scene.intersect_1(ray).unwrap() {
+        match scene.intersect_1(ray).expect("Error intersecting ray") {
             Some(hit) => {
                 let mut color = LinearRgba::BLACK;
-                let geometry: &Geometry = store.get_geometry(hit.hit.geomID).unwrap();
+                let geometry: &Geometry = store
+                    .get_geometry(hit.hit.geomID)
+                    .expect("Error getting geometry");
                 let material = &geometry.material;
 
                 let origin = Vec3::new(hit.ray.org_x, hit.ray.org_y, hit.ray.org_z);
@@ -192,178 +192,38 @@ impl Camera {
         }
     }
 
+    pub fn render(&self, scene: &CommittedScene<'_>, storage: &SceneStorage) -> Rgb32FImage {
+        Rgb32FImage::from_par_fn(self.w, self.h, |x, y| {
+            self.render_pixel(x, y, scene, storage)
+        })
+    }
+
     pub fn render_pixel(
         &self,
         x: u32,
         y: u32,
         scene: &CommittedScene<'_>,
-        store: &Storage,
-    ) -> LinearRgba {
-        let mut base_color = LinearRgba::BLACK;
+        store: &SceneStorage,
+    ) -> Rgb<f32> {
+        let mut result = LinearRgba::BLACK;
 
         for _ in 0..Consts::RAYS_PER_PIXEL {
             let ray = self.generate_ray(x, y, Some((fastrand::f32(), fastrand::f32())));
 
-            base_color += self.trace(ray, scene, store, 0) * (1.0 / Consts::RAYS_PER_PIXEL as f32);
+            result += self.trace(ray, scene, store, 0) / Consts::RAYS_PER_PIXEL as f32;
         }
 
-        base_color
+        result.to_f32_array_no_alpha().into()
     }
 
-    pub fn render(&self, image: &mut Rgb32FImage, scene: &CommittedScene<'_>, store: &Storage) {
-        // TODO: add more unsafe to be faster
-        let image = Mutex::new(image);
-        (0..self.h).into_par_iter().for_each(|y| {
-            // wtf this is terrible
-            let mut image_slice: Vec<Rgb<f32>> = vec![Rgb::<f32>([0.0, 0.0, 0.0]); self.w as usize];
-            for x in 0..self.w {
-                let color = self.render_pixel(x, y, scene, store);
-                *image_slice.get_mut(x as usize).unwrap() =
-                    Rgb::<f32>([color.red, color.green, color.blue]);
-            }
-
-            let mut img = image.lock().unwrap();
-            for x in 0..self.w {
-                *img.get_pixel_mut(x, y) = *image_slice.get(x as usize).unwrap();
-            }
-        });
-    }
-
-    // pass in material to save some work???
-    pub fn handle_ambient_light(&self, material: &Material, light: &Light) -> LinearRgba {
-        LinearRgba::rgb(
-            light.color.red * material.color.red,
-            light.color.green * material.color.green,
-            light.color.blue * material.color.blue,
-        )
-    }
-
-    pub fn handle_point_light(
-        &self,
-        diff: LinearRgba,
-        light: &Light,
-        hit_pos: Vec3,
-        normal: Vec3,
-        light_pos: Vec3,
-        scene: &CommittedScene<'_>,
-    ) -> LinearRgba {
-        // if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
-        // {
-        // compiler please take care of this
-        let distance_to_light = (light_pos - hit_pos).length();
-        let dir_to_light = (light_pos - hit_pos).normalize();
-
-        let light_cos = dir_to_light.dot(normal);
-        if light_cos > 0.0 {
-            // make a ray to the light source to check if there is a clear path from the hit position to the light
-            // if there is, add light contribution
-
-            let mut offset = EPSILON * normal;
-            if dir_to_light.dot(normal) < 0.0 {
-                offset *= -1.0;
-            }
-            let shadow_ray_origin = hit_pos + offset;
-
-            let shadow_ray = RTCRay {
-                org_x: shadow_ray_origin.x,
-                org_y: shadow_ray_origin.y,
-                org_z: shadow_ray_origin.z,
-                dir_x: dir_to_light.x,
-                dir_y: dir_to_light.y,
-                dir_z: dir_to_light.z,
-                tfar: distance_to_light - EPSILON,
-                ..default()
-            };
-
-            // we have a direct path to the light, can add direct illumination
-            if scene.intersect_1(shadow_ray).unwrap().is_none() {
-                let color = LinearRgba::rgb(
-                    light.color.red * diff.red,
-                    light.color.green * diff.green,
-                    light.color.blue * diff.blue,
-                ) * light_cos;
-
-                // println!("{:?}", color);
-                return color;
-            }
-        }
-        // }
-
-        LinearRgba::BLACK
-    }
-
-    // randomly select N points on the light and make them act as individual point lights
-    pub fn handle_square_light(
-        &self,
-        diff: LinearRgba,
-        light: &Light,
-        square: &LightQuad,
-        hit_pos: Vec3,
-        normal: Vec3,
-        scene: &CommittedScene<'_>,
-    ) -> LinearRgba {
-        // if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
-        // {
-        let mut color = LinearRgba::BLACK;
-        for _ in 0..Consts::NUM_AREA_LIGHT_TESTS {
-            let u = fastrand::f32();
-            let v = fastrand::f32();
-
-            let light_pos = square.bottom_left + (u * square.u_vec) + (v * square.v_vec);
-
-            // all the logic here is copied from point lights except NUM_AREA_LIGHT_TESTS
-
-            let distance_to_light = (light_pos - hit_pos).length();
-            let dir_to_light = (light_pos - hit_pos).normalize();
-
-            let light_cos = dir_to_light.dot(normal);
-            if light_cos > 0.0 {
-                // make a ray to the light source to check if there is a clear path from the hit position to the light
-                // if there is, add light contribution
-
-                let mut offset = EPSILON * normal;
-                if dir_to_light.dot(normal) < 0.0 {
-                    offset *= -1.0;
-                }
-                let shadow_ray_origin = hit_pos + offset;
-
-                let shadow_ray = RTCRay {
-                    org_x: shadow_ray_origin.x,
-                    org_y: shadow_ray_origin.y,
-                    org_z: shadow_ray_origin.z,
-                    dir_x: dir_to_light.x,
-                    dir_y: dir_to_light.y,
-                    dir_z: dir_to_light.z,
-                    tfar: distance_to_light - EPSILON,
-                    ..default()
-                };
-
-                // we have a direct path to the light, can add direct illumination
-                if scene.intersect_1(shadow_ray).unwrap().is_none() {
-                    color += LinearRgba::rgb(
-                        light.color.red * diff.red,
-                        light.color.green * diff.green,
-                        light.color.blue * diff.blue,
-                    ) * light_cos
-                        * (1.0 / Consts::NUM_AREA_LIGHT_TESTS as f32);
-
-                    // println!("{:?}", color);
-                }
-            }
-        }
-
-        color
-    }
-
-    // TODO: color * color e tao cursed que a bevy_color nem sequer implementa. mato-me?
     pub fn direct_lighting(
         &self,
         hit_pos: Vec3,
         normal: Vec3,
         material: &Material,
-        diff: LinearRgba,
+        diffuse: LinearRgba,
         scene: &CommittedScene<'_>,
-        store: &Storage,
+        store: &SceneStorage,
     ) -> LinearRgba {
         let mut color = LinearRgba::BLACK;
 
@@ -372,29 +232,10 @@ impl Camera {
         if Consts::COMPARE_ALL_LIGHTS {
             // loop over all light sources
             for light in lights.iter() {
-                color += match light.light_type {
-                    LightType::Ambient => self.handle_ambient_light(material, light),
-                    LightType::Point(light_pos) => {
-                        self.handle_point_light(diff, light, hit_pos, normal, light_pos, scene)
-                    }
-                    LightType::AreaQuad(ref square) => {
-                        self.handle_square_light(diff, light, square, hit_pos, normal, scene)
-                    }
-                };
+                color += light.handle_light(hit_pos, normal, material, diffuse, scene);
             }
-        } else {
-            let light_i = fastrand::usize(..lights.len());
-            let light = lights.get(light_i).unwrap();
-            color += match light.light_type {
-                LightType::Ambient => self.handle_ambient_light(material, light),
-                LightType::Point(light_pos) => {
-                    self.handle_point_light(diff, light, hit_pos, normal, light_pos, scene)
-                }
-                LightType::AreaQuad(ref square) => {
-                    self.handle_square_light(diff, light, square, hit_pos, normal, scene)
-                }
-            };
-
+        } else if let Some(light) = fastrand::choice(lights) {
+            color += light.handle_light(hit_pos, normal, material, diffuse, scene);
             color *= lights.len() as f32;
         }
 
@@ -557,7 +398,7 @@ impl Camera {
         material: &Material,
         depth: u32,
         scene: &CommittedScene<'_>,
-        store: &Storage,
+        store: &SceneStorage,
     ) -> LinearRgba {
         // n1 is refraction being left
         // n2 is refraction being entered
@@ -694,6 +535,149 @@ impl Camera {
                     ) * diffuse_weight
                         * cos_theta
                         * (1.0 / Consts::NUM_SCATTER as f32);
+                }
+            }
+        }
+
+        color
+    }
+}
+
+impl Light {
+    fn handle_light(
+        &self,
+        hit_pos: Vec3,
+        normal: Vec3,
+        material: &Material,
+        diffuse: LinearRgba,
+        scene: &CommittedScene,
+    ) -> LinearRgba {
+        match &self.light_type {
+            LightType::Ambient => self.handle_ambient_light(material),
+            LightType::Point(light_pos) => {
+                self.handle_point_light(diffuse, hit_pos, normal, *light_pos, scene)
+            }
+            LightType::AreaQuad(square) => {
+                self.handle_square_light(diffuse, square, hit_pos, normal, scene)
+            }
+        }
+    }
+
+    fn handle_ambient_light(&self, material: &Material) -> LinearRgba {
+        LinearRgba::rgb(
+            self.color.red * material.color.red,
+            self.color.green * material.color.green,
+            self.color.blue * material.color.blue,
+        )
+    }
+
+    fn handle_point_light(
+        &self,
+        diffuse: LinearRgba,
+        hit_pos: Vec3,
+        normal: Vec3,
+        light_pos: Vec3,
+        scene: &CommittedScene<'_>,
+    ) -> LinearRgba {
+        // if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
+        // {
+        // compiler please take care of this
+        let distance_to_light = (light_pos - hit_pos).length();
+        let dir_to_light = (light_pos - hit_pos).normalize();
+
+        let light_cos = dir_to_light.dot(normal);
+        if light_cos > 0.0 {
+            // make a ray to the light source to check if there is a clear path from the hit position to the light
+            // if there is, add light contribution
+
+            let mut offset = EPSILON * normal;
+            if dir_to_light.dot(normal) < 0.0 {
+                offset *= -1.0;
+            }
+            let shadow_ray_origin = hit_pos + offset;
+
+            let shadow_ray = RTCRay {
+                org_x: shadow_ray_origin.x,
+                org_y: shadow_ray_origin.y,
+                org_z: shadow_ray_origin.z,
+                dir_x: dir_to_light.x,
+                dir_y: dir_to_light.y,
+                dir_z: dir_to_light.z,
+                tfar: distance_to_light - EPSILON,
+                ..default()
+            };
+
+            // we have a direct path to the light, can add direct illumination
+            if let Ok(None) = scene.intersect_1(shadow_ray) {
+                let color = LinearRgba::rgb(
+                    self.color.red * diffuse.red,
+                    self.color.green * diffuse.green,
+                    self.color.blue * diffuse.blue,
+                ) * light_cos;
+
+                return color;
+            }
+        }
+        // }
+
+        LinearRgba::BLACK
+    }
+
+    // randomly select N points on the light and make them act as individual point lights
+    fn handle_square_light(
+        &self,
+        diff: LinearRgba,
+        square: &LightQuad,
+        hit_pos: Vec3,
+        normal: Vec3,
+        scene: &CommittedScene<'_>,
+    ) -> LinearRgba {
+        // if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
+        // {
+        let mut color = LinearRgba::BLACK;
+        for _ in 0..Consts::NUM_AREA_LIGHT_TESTS {
+            let u = fastrand::f32();
+            let v = fastrand::f32();
+
+            let light_pos = square.bottom_left + (u * square.u_vec) + (v * square.v_vec);
+
+            // all the logic here is copied from point lights except NUM_AREA_LIGHT_TESTS
+
+            let distance_to_light = (light_pos - hit_pos).length();
+            let dir_to_light = (light_pos - hit_pos).normalize();
+
+            let light_cos = dir_to_light.dot(normal);
+            if light_cos > 0.0 {
+                // make a ray to the light source to check if there is a clear path from the hit position to the light
+                // if there is, add light contribution
+
+                let mut offset = EPSILON * normal;
+                if dir_to_light.dot(normal) < 0.0 {
+                    offset *= -1.0;
+                }
+                let shadow_ray_origin = hit_pos + offset;
+
+                let shadow_ray = RTCRay {
+                    org_x: shadow_ray_origin.x,
+                    org_y: shadow_ray_origin.y,
+                    org_z: shadow_ray_origin.z,
+                    dir_x: dir_to_light.x,
+                    dir_y: dir_to_light.y,
+                    dir_z: dir_to_light.z,
+                    tfar: distance_to_light - EPSILON,
+                    ..default()
+                };
+
+                // we have a direct path to the light, can add direct illumination
+                if scene.intersect_1(shadow_ray).unwrap().is_none() {
+                    color += LinearRgba::rgb(
+                        self.color.red * diff.red,
+                        self.color.green * diff.green,
+                        self.color.blue * diff.blue,
+                    ) * light_cos
+                        * (1.0 / Consts::NUM_AREA_LIGHT_TESTS as f32);
+
+                    // println!("{:?}", color);
                 }
             }
         }

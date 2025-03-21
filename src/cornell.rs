@@ -11,35 +11,39 @@ use gltf::{
     mesh::util::*,
 };
 
-pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'_>) -> Result<()> {
-    let mut ceiling_mesh = Mesh::default();
+pub fn cornell_box(
+    store: &mut SceneStorage,
+    device: &Device,
+    mut scene: &mut Scene<'_>,
+) -> Result<()> {
+    let mut ceiling_mesh = MeshGeometry::default();
     ceiling_mesh.verts.push((556.0, 548.8, 0.0));
     ceiling_mesh.verts.push((0.0, 548.8, 0.0));
     ceiling_mesh.verts.push((0.0, 548.8, 559.2));
     ceiling_mesh.verts.push((556.0, 548.8, 559.2));
     ceiling_mesh.indices.push((0, 2, 1));
     ceiling_mesh.indices.push((0, 3, 2));
-    let ceiling = Geometry::with_material(Material::WHITE_MATERIAL, GeomInfo::MESH(ceiling_mesh));
+    let ceiling = Geometry::with_material(Material::WHITE_MATERIAL, GeomInfo::Mesh(ceiling_mesh));
 
-    let mut floor_mesh = Mesh::default();
+    let mut floor_mesh = MeshGeometry::default();
     floor_mesh.verts.push((552.8, 0.0, 0.0));
     floor_mesh.verts.push((0.0, 0.0, 0.0));
     floor_mesh.verts.push((0.0, 0.0, 559.2));
     floor_mesh.verts.push((549.6, 0.0, 559.2));
     floor_mesh.indices.push((0, 1, 2));
     floor_mesh.indices.push((0, 2, 3));
-    let floor = Geometry::with_material(Material::WHITE_MATERIAL, GeomInfo::MESH(floor_mesh));
+    let floor = Geometry::with_material(Material::WHITE_MATERIAL, GeomInfo::Mesh(floor_mesh));
 
-    let mut back_mesh = Mesh::default();
+    let mut back_mesh = MeshGeometry::default();
     back_mesh.verts.push((0.0, 0.0, 559.2));
     back_mesh.verts.push((549.6, 0.0, 559.2));
     back_mesh.verts.push((556.0, 548.8, 559.2));
     back_mesh.verts.push((0.0, 548.8, 559.2));
     back_mesh.indices.push((2, 1, 0));
     back_mesh.indices.push((3, 2, 0));
-    let back = Geometry::with_material(Material::WHITE_MATERIAL, GeomInfo::MESH(back_mesh));
+    let back = Geometry::with_material(Material::WHITE_MATERIAL, GeomInfo::Mesh(back_mesh));
 
-    let mut left_mesh = Mesh::default();
+    let mut left_mesh = MeshGeometry::default();
     left_mesh.verts.push((0.0, 0.0, 0.0));
     left_mesh.verts.push((0., 0., 559.2));
     left_mesh.verts.push((0., 548.8, 559.2));
@@ -52,18 +56,18 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
 
     left_mesh.indices.push((0, 2, 1));
     left_mesh.indices.push((0, 3, 2));
-    let left = Geometry::with_material(Material::UV_MATERIAL, GeomInfo::MESH(left_mesh));
+    let left = Geometry::with_material(Material::UV_MATERIAL, GeomInfo::Mesh(left_mesh));
 
-    let mut right_mesh = Mesh::default();
+    let mut right_mesh = MeshGeometry::default();
     right_mesh.verts.push((552.8, 0.0, 0.));
     right_mesh.verts.push((549.6, 0., 559.2));
     right_mesh.verts.push((549.6, 548.8, 559.2));
     right_mesh.verts.push((552.8, 548.8, 0.));
     right_mesh.indices.push((0, 1, 2));
     right_mesh.indices.push((0, 2, 3));
-    let right = Geometry::with_material(Material::RED_MATERIAL, GeomInfo::MESH(right_mesh));
+    let right = Geometry::with_material(Material::RED_MATERIAL, GeomInfo::Mesh(right_mesh));
 
-    let mut short_block_top_mesh = Mesh::default();
+    let mut short_block_top_mesh = MeshGeometry::default();
     short_block_top_mesh.verts.push((130.0, 165.0, 65.0));
     short_block_top_mesh.verts.push((82.0, 165.0, 225.0));
     short_block_top_mesh.verts.push((240.0, 165.0, 272.0));
@@ -72,10 +76,10 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     short_block_top_mesh.indices.push((0, 2, 3));
     let short_block_top = Geometry::with_material(
         Material::ORANGE_MATERIAL,
-        GeomInfo::MESH(short_block_top_mesh),
+        GeomInfo::Mesh(short_block_top_mesh),
     );
 
-    let mut short_block_bot_mesh = Mesh::default();
+    let mut short_block_bot_mesh = MeshGeometry::default();
     short_block_bot_mesh.verts.push((130.0, 0.01, 65.0));
     short_block_bot_mesh.verts.push((82.0, 0.01, 225.0));
     short_block_bot_mesh.verts.push((240.0, 0.01, 272.0));
@@ -84,10 +88,10 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     short_block_bot_mesh.indices.push((0, 2, 3));
     let short_block_bot = Geometry::with_material(
         Material::ORANGE_MATERIAL,
-        GeomInfo::MESH(short_block_bot_mesh),
+        GeomInfo::Mesh(short_block_bot_mesh),
     );
 
-    let mut short_block_left_mesh = Mesh::default();
+    let mut short_block_left_mesh = MeshGeometry::default();
     short_block_left_mesh.verts.push((290.0, 0.0, 114.0));
     short_block_left_mesh.verts.push((290.0, 165.0, 114.0));
     short_block_left_mesh.verts.push((240.0, 165.0, 272.0));
@@ -96,10 +100,10 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     short_block_left_mesh.indices.push((0, 2, 3));
     let short_block_left = Geometry::with_material(
         Material::ORANGE_MATERIAL,
-        GeomInfo::MESH(short_block_left_mesh),
+        GeomInfo::Mesh(short_block_left_mesh),
     );
 
-    let mut short_block_back_mesh = Mesh::default();
+    let mut short_block_back_mesh = MeshGeometry::default();
     short_block_back_mesh.verts.push((240.0, 0.0, 272.0));
     short_block_back_mesh.verts.push((240.0, 165.0, 272.0));
     short_block_back_mesh.verts.push((82.0, 165., 225.0));
@@ -108,10 +112,10 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     short_block_back_mesh.indices.push((0, 2, 3));
     let short_block_back = Geometry::with_material(
         Material::ORANGE_MATERIAL,
-        GeomInfo::MESH(short_block_back_mesh),
+        GeomInfo::Mesh(short_block_back_mesh),
     );
 
-    let mut short_block_right_mesh = Mesh::default();
+    let mut short_block_right_mesh = MeshGeometry::default();
     short_block_right_mesh.verts.push((82.0, 0.0, 225.0));
     short_block_right_mesh.verts.push((82.0, 165.0, 225.0));
     short_block_right_mesh.verts.push((130.0, 165.0, 65.0));
@@ -120,10 +124,10 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     short_block_right_mesh.indices.push((0, 2, 3));
     let short_block_right = Geometry::with_material(
         Material::ORANGE_MATERIAL,
-        GeomInfo::MESH(short_block_right_mesh),
+        GeomInfo::Mesh(short_block_right_mesh),
     );
 
-    let mut short_block_front_mesh = Mesh::default();
+    let mut short_block_front_mesh = MeshGeometry::default();
     short_block_front_mesh.verts.push((130.0, 0.0, 65.0));
     short_block_front_mesh.verts.push((130.0, 165.0, 65.0));
     short_block_front_mesh.verts.push((290.0, 165.0, 114.0));
@@ -132,10 +136,10 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     short_block_front_mesh.indices.push((0, 2, 3));
     let short_block_front = Geometry::with_material(
         Material::ORANGE_MATERIAL,
-        GeomInfo::MESH(short_block_front_mesh),
+        GeomInfo::Mesh(short_block_front_mesh),
     );
 
-    let mut tall_block_top_mesh = Mesh::default();
+    let mut tall_block_top_mesh = MeshGeometry::default();
     tall_block_top_mesh.verts.push((423.0, 330.0, 247.0));
     tall_block_top_mesh.verts.push((265.0, 330.0, 296.0));
     tall_block_top_mesh.verts.push((314.0, 330.0, 456.0));
@@ -143,9 +147,9 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     tall_block_top_mesh.indices.push((0, 1, 2));
     tall_block_top_mesh.indices.push((0, 2, 3));
     let tall_block_top =
-        Geometry::with_material(Material::BLUE_MATERIAL, GeomInfo::MESH(tall_block_top_mesh));
+        Geometry::with_material(Material::BLUE_MATERIAL, GeomInfo::Mesh(tall_block_top_mesh));
 
-    let mut tall_block_bot_mesh = Mesh::default();
+    let mut tall_block_bot_mesh = MeshGeometry::default();
     tall_block_bot_mesh.verts.push((423.0, 0.1, 247.0));
     tall_block_bot_mesh.verts.push((265.0, 0.1, 296.0));
     tall_block_bot_mesh.verts.push((314.0, 0.1, 456.0));
@@ -153,9 +157,9 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     tall_block_bot_mesh.indices.push((0, 1, 2));
     tall_block_bot_mesh.indices.push((0, 2, 3));
     let tall_block_bot =
-        Geometry::with_material(Material::BLUE_MATERIAL, GeomInfo::MESH(tall_block_bot_mesh));
+        Geometry::with_material(Material::BLUE_MATERIAL, GeomInfo::Mesh(tall_block_bot_mesh));
 
-    let mut tall_block_left_mesh = Mesh::default();
+    let mut tall_block_left_mesh = MeshGeometry::default();
     tall_block_left_mesh.verts.push((423.0, 0.0, 247.0));
     tall_block_left_mesh.verts.push((423.0, 330.0, 247.0));
     tall_block_left_mesh.verts.push((472.0, 330.0, 406.0));
@@ -164,10 +168,10 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     tall_block_left_mesh.indices.push((0, 2, 3));
     let tall_block_left = Geometry::with_material(
         Material::BLUE_MATERIAL,
-        GeomInfo::MESH(tall_block_left_mesh),
+        GeomInfo::Mesh(tall_block_left_mesh),
     );
 
-    let mut tall_block_back_mesh = Mesh::default();
+    let mut tall_block_back_mesh = MeshGeometry::default();
     tall_block_back_mesh.verts.push((472.0, 330.0, 406.0));
     tall_block_back_mesh.verts.push((472.0, 330.0, 406.0));
     tall_block_back_mesh.verts.push((314.0, 330.0, 456.0));
@@ -176,10 +180,10 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     tall_block_back_mesh.indices.push((0, 2, 3));
     let tall_block_back = Geometry::with_material(
         Material::BLUE_MATERIAL,
-        GeomInfo::MESH(tall_block_back_mesh),
+        GeomInfo::Mesh(tall_block_back_mesh),
     );
 
-    let mut tall_block_right_mesh = Mesh::default();
+    let mut tall_block_right_mesh = MeshGeometry::default();
     tall_block_right_mesh.verts.push((314.0, 0.0, 456.0));
     tall_block_right_mesh.verts.push((314.0, 330.0, 456.0));
     tall_block_right_mesh.verts.push((265.0, 330.0, 296.0));
@@ -188,10 +192,10 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     tall_block_right_mesh.indices.push((0, 2, 3));
     let tall_block_right = Geometry::with_material(
         Material::BLUE_MATERIAL,
-        GeomInfo::MESH(tall_block_right_mesh),
+        GeomInfo::Mesh(tall_block_right_mesh),
     );
 
-    let mut tall_block_front_mesh = Mesh::default();
+    let mut tall_block_front_mesh = MeshGeometry::default();
     tall_block_front_mesh.verts.push((265.0, 0.0, 296.0));
     tall_block_front_mesh.verts.push((265.0, 330.0, 296.0));
     tall_block_front_mesh.verts.push((423.0, 330.0, 247.0));
@@ -200,24 +204,24 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     tall_block_front_mesh.indices.push((0, 2, 3));
     let tall_block_front = Geometry::with_material(
         Material::BLUE_MATERIAL,
-        GeomInfo::MESH(tall_block_front_mesh),
+        GeomInfo::Mesh(tall_block_front_mesh),
     );
 
-    let mut mirror_mesh = Mesh::default();
+    let mut mirror_mesh = MeshGeometry::default();
     mirror_mesh.verts.push((552.0, 50.0, 50.));
     mirror_mesh.verts.push((549.0, 50.0, 509.2));
     mirror_mesh.verts.push((549.0, 488.8, 509.2));
     mirror_mesh.verts.push((552.0, 488.8, 50.0));
     mirror_mesh.indices.push((0, 1, 2));
     mirror_mesh.indices.push((0, 2, 3));
-    let mirror = Geometry::with_material(Material::MIRROR_MATERIAL, GeomInfo::MESH(mirror_mesh));
+    let mirror = Geometry::with_material(Material::MIRROR_MATERIAL, GeomInfo::Mesh(mirror_mesh));
 
-    let sphere = Sphere {
+    let sphere = SphereGeometry {
         radius: 110.0,
         center: Vec3::new(160.0, 320.0, 225.0),
     };
     let sphere_geometry =
-        Geometry::with_material(Material::GLASS_MATERIAL, GeomInfo::SPHERE(sphere));
+        Geometry::with_material(Material::GLASS_MATERIAL, GeomInfo::Sphere(sphere));
 
     store.attach_geometry(ceiling, &device, &mut scene)?;
     store.attach_geometry(floor, &device, &mut scene)?;
@@ -250,7 +254,7 @@ pub fn cornell_box(store: &mut Storage, device: &Device, mut scene: &mut Scene<'
     let mut bright_red_cube = cube_mesh.clone();
     bright_red_cube.transform(transform.compute_matrix());
     store.attach_geometry(
-        Geometry::with_material(Material::EMISSIVE_MATERIAL, GeomInfo::MESH(bright_red_cube)),
+        Geometry::with_material(Material::EMISSIVE_MATERIAL, GeomInfo::Mesh(bright_red_cube)),
         &device,
         &mut scene,
     )?;
@@ -299,7 +303,7 @@ pub fn get_gltf_meshes(
     gltf_doc: &gltf::Document,
     gltf_buff: &Vec<gltf::buffer::Data>,
     // transform: &Transform,
-) -> Vec<Mesh> {
+) -> Vec<MeshGeometry> {
     // let matrix = transform.compute_matrix();
 
     // for scene in gltf.scenes() {
@@ -313,7 +317,7 @@ pub fn get_gltf_meshes(
 
     let meshes_iter = gltf_doc.meshes();
 
-    let mut meshes: Vec<Mesh> = Vec::with_capacity(meshes_iter.len());
+    let mut meshes: Vec<MeshGeometry> = Vec::with_capacity(meshes_iter.len());
 
     for mesh in meshes_iter {
         for primitive in mesh.primitives() {
@@ -382,7 +386,7 @@ pub fn get_gltf_meshes(
                 .map(|chunk| (chunk[0], chunk[1], chunk[2]))
                 .collect();
 
-            let new_mesh = Mesh {
+            let new_mesh = MeshGeometry {
                 verts,
                 indices: triangle_indices,
                 tex_coords,
@@ -395,7 +399,7 @@ pub fn get_gltf_meshes(
 }
 
 pub fn add_gltf(
-    store: &mut Storage,
+    store: &mut SceneStorage,
     device: &Device,
     mut scene: &mut Scene<'_>,
     gltf_doc: &gltf::Document,
@@ -405,20 +409,20 @@ pub fn add_gltf(
 ) -> Result<()> {
     for mut mesh in get_gltf_meshes(gltf_doc, gltf_buff) {
         mesh.transform(matrix);
-        let geometry = Geometry::with_material(material.clone(), GeomInfo::MESH(mesh));
+        let geometry = Geometry::with_material(material.clone(), GeomInfo::Mesh(mesh));
         let _ = store.attach_geometry(geometry, &device, &mut scene)?;
     }
 
     Ok(())
 }
 
-pub fn add_skybox(store: &mut Storage, device: &Device, scene: &mut Scene<'_>) -> Result<()> {
-    let mut front = Mesh::default();
-    let mut back = Mesh::default();
-    let mut right = Mesh::default();
-    let mut left = Mesh::default();
-    let mut top = Mesh::default();
-    let mut bottom = Mesh::default();
+pub fn add_skybox(store: &mut SceneStorage, device: &Device, scene: &mut Scene<'_>) -> Result<()> {
+    let mut front = MeshGeometry::default();
+    let mut back = MeshGeometry::default();
+    let mut right = MeshGeometry::default();
+    let mut left = MeshGeometry::default();
+    let mut top = MeshGeometry::default();
+    let mut bottom = MeshGeometry::default();
 
     let mut front_material = Material::CUBEMAP_MATERIAL;
     front_material.emissive = Texture::Image(1);
@@ -572,32 +576,32 @@ pub fn add_skybox(store: &mut Storage, device: &Device, scene: &mut Scene<'_>) -
     bottom.tex_coords.push(Vec2::new(0.0, 1.0));
 
     store.attach_geometry(
-        Geometry::with_material(front_material, GeomInfo::MESH(front)),
+        Geometry::with_material(front_material, GeomInfo::Mesh(front)),
         device,
         scene,
     )?;
     store.attach_geometry(
-        Geometry::with_material(back_material, GeomInfo::MESH(back)),
+        Geometry::with_material(back_material, GeomInfo::Mesh(back)),
         device,
         scene,
     )?;
     store.attach_geometry(
-        Geometry::with_material(right_material, GeomInfo::MESH(right)),
+        Geometry::with_material(right_material, GeomInfo::Mesh(right)),
         device,
         scene,
     )?;
     store.attach_geometry(
-        Geometry::with_material(left_material, GeomInfo::MESH(left)),
+        Geometry::with_material(left_material, GeomInfo::Mesh(left)),
         device,
         scene,
     )?;
     store.attach_geometry(
-        Geometry::with_material(top_material, GeomInfo::MESH(top)),
+        Geometry::with_material(top_material, GeomInfo::Mesh(top)),
         device,
         scene,
     )?;
     store.attach_geometry(
-        Geometry::with_material(bottom_material, GeomInfo::MESH(bottom)),
+        Geometry::with_material(bottom_material, GeomInfo::Mesh(bottom)),
         device,
         scene,
     )?;

@@ -1,50 +1,54 @@
+use crate::geometry::{GeomInfo, Geometry, Light, Texture};
+use anyhow::{Context, Result};
+use bevy_color::LinearRgba;
+use bevy_math::Vec2;
+use embree4_rs::geometry::SphereGeometry;
 use image::ImageReader;
 use image::Rgba32FImage;
 use rayon::prelude::*;
 use std::collections::HashMap;
 
-use super::*;
-
-pub struct Storage {
+pub struct SceneStorage {
     pub lights: Vec<Light>,
     pub geom: HashMap<u32, Geometry>,
     pub textures: Vec<Rgba32FImage>,
 }
 
-impl Storage {
+impl SceneStorage {
     pub fn attach_geometry(
         &mut self,
         geom: Geometry,
-        device: &Device,
-        scene: &mut Scene<'_>,
+        device: &embree4_rs::Device,
+        scene: &mut embree4_rs::Scene<'_>,
     ) -> Result<u32> {
-        let id: u32;
-
-        match geom.info {
-            GeomInfo::MESH(ref mesh) => {
-                let embree_mesh =
-                    TriangleMeshGeometry::try_new(device, &mesh.verts, &mesh.indices)?;
-                id = scene.attach_geometry(&embree_mesh)?;
+        let id = match geom.info {
+            GeomInfo::Mesh(ref mesh) => {
+                let embree_mesh = embree4_rs::geometry::TriangleMeshGeometry::try_new(
+                    device,
+                    &mesh.verts,
+                    &mesh.indices,
+                )?;
+                scene.attach_geometry(&embree_mesh)?
             }
-            GeomInfo::SPHERE(ref sphere) => {
+            GeomInfo::Sphere(ref sphere) => {
                 let embree_geom = SphereGeometry::try_new(
                     device,
                     (sphere.center.x, sphere.center.y, sphere.center.z),
                     sphere.radius,
                 )?;
-                id = scene.attach_geometry(&embree_geom)?;
+                scene.attach_geometry(&embree_geom)?
             }
-        }
+        };
         self.geom.insert(id, geom);
         Ok(id)
     }
 
     pub fn get_geometry(&self, id: u32) -> Option<&Geometry> {
-        return self.geom.get(&id);
+        self.geom.get(&id)
     }
 
     // use this instead of default so that the default texture is loaded
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self> {
         let mut res = Self {
             lights: Vec::new(),
             geom: HashMap::new(),
@@ -52,32 +56,19 @@ impl Storage {
         };
 
         let default_texture: Rgba32FImage = ImageReader::open("assets/textures/uv.png")
-            .expect("Default texture (assets/textures/uv.png) does not exist")
+            .context("Default texture (assets/textures/uv.png) does not exist")?
             .decode()
-            .expect("Error decoding texture assets/textures/uv.png")
+            .context("Error decoding texture assets/textures/uv.png")?
             .into_rgba32f();
 
         res.textures.push(default_texture);
 
-        res
-    }
-
-    // TODO retornar mensagens com o path????
-    pub fn load_texture(&mut self, path: &str) -> Result<()> {
-        let texture: Rgba32FImage = ImageReader::open(path)?.decode()?.into_rgba32f();
-        // .expect(format!("texture {} does not exist", path).as_str())
-        // .decode()
-        // .expect(format!("Error decoding texture assets/textures/uv.png").as_str())
-        // .into_rgba32f();
-
-        self.textures.push(texture);
-
-        Ok(())
+        Ok(res)
     }
 
     // I assume opening the file is very fast but decoding() and into_rgba32f() are slow, so I just made the whole thing parallel
     // cursed, does not error out instantly
-    pub fn load_textures_batch(&mut self, paths: Vec<&str>) -> Result<()> {
+    pub fn load_textures_batch(&mut self, paths: &[&str]) -> Result<()> {
         let new_textures: Vec<Result<Rgba32FImage>> = paths
             .par_iter() // Parallel iterator
             .map(|&path| {
@@ -116,14 +107,20 @@ impl Storage {
 
         let diff: LinearRgba = match geom.material.texture {
             Texture::Solid(diff) => diff,
-            Texture::Image(id) => sample(uv, &self.textures[id as usize]),
+            Texture::Image(id) => Self::sample(uv, &self.textures[id as usize]),
         };
 
         let emissive: LinearRgba = match geom.material.emissive {
             Texture::Solid(emissive) => emissive,
-            Texture::Image(id) => sample(uv, &self.textures[id as usize]),
+            Texture::Image(id) => Self::sample(uv, &self.textures[id as usize]),
         };
 
         (diff, emissive)
+    }
+
+    fn sample(uv: Vec2, texture: &Rgba32FImage) -> LinearRgba {
+        let color = image::imageops::sample_bilinear(texture, uv.x, uv.y).expect("UV is in bounds");
+
+        LinearRgba::rgb(color[0], color[1], color[2])
     }
 }
