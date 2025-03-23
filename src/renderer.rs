@@ -1,8 +1,8 @@
 use crate::camera::Camera;
+use crate::color::Rgba;
 use crate::consts::{AIR_REFRACT, Consts, EPSILON};
 use crate::geometry::{BuiltScene, Geometry, Light, LightQuad, LightType, Material};
 use crate::raytracer::{Ray, RayTracer};
-use bevy_color::{ColorToComponents, LinearRgba};
 use bevy_math::Vec3;
 use image::{Rgb, Rgb32FImage};
 use std::sync::Arc;
@@ -36,7 +36,7 @@ impl<T: RayTracer> Renderer<T> {
     }
 
     pub fn render_pixel(&self, x: u32, y: u32, camera: &Camera) -> Rgb<f32> {
-        let mut result = LinearRgba::BLACK;
+        let mut result = Rgba::BLACK;
 
         for _ in 0..Consts::RAYS_PER_PIXEL {
             let ray = camera.generate_ray(x, y, (fastrand::f32(), fastrand::f32()));
@@ -44,17 +44,17 @@ impl<T: RayTracer> Renderer<T> {
             result += self.trace(ray, AIR_REFRACT, 0) / Consts::RAYS_PER_PIXEL as f32;
         }
 
-        result.to_f32_array_no_alpha().into()
+        result.into()
     }
 
-    fn trace(&self, ray: Ray, refraction: f32, depth: u32) -> LinearRgba {
+    fn trace(&self, ray: Ray, refraction: f32, depth: u32) -> Rgba {
         if depth > Consts::MAX_DEPTH {
             // TODO: save this somewhere
-            return LinearRgba::BLACK;
+            return Rgba::BLACK;
         }
 
         if let Some(hit) = self.scene.raytracer.intersect(ray) {
-            let mut color = LinearRgba::BLACK;
+            let mut color = Rgba::BLACK;
             let geometry: &Geometry = self
                 .scene
                 .get_geometry(hit.geometry_id)
@@ -78,7 +78,7 @@ impl<T: RayTracer> Renderer<T> {
 
             color
         } else {
-            LinearRgba::BLACK
+            Rgba::BLACK
         }
     }
 
@@ -87,9 +87,9 @@ impl<T: RayTracer> Renderer<T> {
         hit_pos: Vec3,
         normal: Vec3,
         material: &Material,
-        diffuse: LinearRgba,
-    ) -> LinearRgba {
-        let mut color = LinearRgba::BLACK;
+        diffuse: Rgba,
+    ) -> Rgba {
+        let mut color = Rgba::BLACK;
 
         let lights = &self.scene.lights;
 
@@ -138,11 +138,11 @@ impl<T: RayTracer> Renderer<T> {
         hit: Vec3,
         incident_dir: Vec3,
         normal: Vec3,
-        diff: LinearRgba,
+        diff: Rgba,
         ray_refraction: f32,
         material: &Material,
         depth: u32,
-    ) -> LinearRgba {
+    ) -> Rgba {
         // n1 is refraction being left
         // n2 is refraction being entered
 
@@ -165,7 +165,7 @@ impl<T: RayTracer> Renderer<T> {
         let refract = 1.0 - reflect;
 
         // REFLECTION, for materials with reflectivity
-        let mut color = LinearRgba::BLACK;
+        let mut color = Rgba::BLACK;
         if reflect > 0.0 && material.reflectivity > 0.0 {
             let refdir = incident_dir.reflect(normal);
 
@@ -181,11 +181,7 @@ impl<T: RayTracer> Renderer<T> {
 
             color += self.trace(reflection_ray, refraction, depth + 1);
 
-            color = LinearRgba::rgb(
-                material.specular.red * color.red,
-                material.specular.green * color.green,
-                material.specular.blue * color.blue,
-            ) * reflect; // no need to multiply by reflectivity of the material, fresnel already takes it into account
+            color = material.specular * color * reflect; // no need to multiply by reflectivity of the material, fresnel already takes it into account
         }
 
         // REFRACTION, for materials with transparency
@@ -213,12 +209,7 @@ impl<T: RayTracer> Renderer<T> {
 
                 color += self.trace(refraction_ray, refraction, depth + 1);
 
-                color = LinearRgba::rgb(
-                    material.transmission.red * color.red,
-                    material.transmission.green * color.green,
-                    material.transmission.blue * color.blue,
-                ) * material.transparency
-                    * refract;
+                color = material.transmission * color * material.transparency * refract;
                 // here I use transparency to imply some of the light is lost/absorbed when refracting
                 // this is technically not needed and not correct, but beer's law is not yet implemented so this will have to do for now
             }
@@ -244,11 +235,9 @@ impl<T: RayTracer> Renderer<T> {
                     let scattered_color = self.trace(scatter_ray, n1, depth + 1);
                     let cos_theta = scatter_dir.dot(normal).max(0.0);
                     // TODO what color from the current material should I be using???
-                    color += LinearRgba::rgb(
-                        scattered_color.red * diff.red,
-                        scattered_color.green * diff.green,
-                        scattered_color.blue * diff.blue,
-                    ) * diffuse_weight
+                    color += scattered_color
+                        * diff
+                        * diffuse_weight
                         * cos_theta
                         * (1.0 / Consts::NUM_SCATTER as f32);
                 }
@@ -264,8 +253,8 @@ impl<T: RayTracer> Renderer<T> {
         hit_pos: Vec3,
         normal: Vec3,
         material: &Material,
-        diffuse: LinearRgba,
-    ) -> LinearRgba {
+        diffuse: Rgba,
+    ) -> Rgba {
         match &light.light_type {
             LightType::Ambient => Self::handle_ambient_light(light, material),
             LightType::Point(light_pos) => {
@@ -277,22 +266,18 @@ impl<T: RayTracer> Renderer<T> {
         }
     }
 
-    fn handle_ambient_light(light: &Light, material: &Material) -> LinearRgba {
-        LinearRgba::rgb(
-            light.color.red * material.color.red,
-            light.color.green * material.color.green,
-            light.color.blue * material.color.blue,
-        )
+    fn handle_ambient_light(light: &Light, material: &Material) -> Rgba {
+        light.color * material.color
     }
 
     fn handle_point_light(
         &self,
         light: &Light,
-        diffuse: LinearRgba,
+        diffuse: Rgba,
         hit_pos: Vec3,
         normal: Vec3,
         light_pos: Vec3,
-    ) -> LinearRgba {
+    ) -> Rgba {
         // if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
         // {
         // compiler please take care of this
@@ -318,32 +303,28 @@ impl<T: RayTracer> Renderer<T> {
 
             // we have a direct path to the light, can add direct illumination
             if let None = self.scene.raytracer.intersect(shadow_ray) {
-                let color = LinearRgba::rgb(
-                    light.color.red * diffuse.red,
-                    light.color.green * diffuse.green,
-                    light.color.blue * diffuse.blue,
-                ) * light_cos;
+                let color = light.color * diffuse * light_cos;
 
                 return color;
             }
         }
         // }
 
-        LinearRgba::BLACK
+        Rgba::BLACK
     }
 
     // randomly select N points on the light and make them act as individual point lights
     fn handle_square_light(
         &self,
         light: &Light,
-        diff: LinearRgba,
+        diff: Rgba,
         square: &LightQuad,
         hit_pos: Vec3,
         normal: Vec3,
-    ) -> LinearRgba {
+    ) -> Rgba {
         // if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
         // {
-        let mut color = LinearRgba::BLACK;
+        let mut color = Rgba::BLACK;
         for _ in 0..Consts::NUM_AREA_LIGHT_TESTS {
             let u = fastrand::f32();
             let v = fastrand::f32();
@@ -375,11 +356,7 @@ impl<T: RayTracer> Renderer<T> {
 
                 // we have a direct path to the light, can add direct illumination
                 if let None = self.scene.raytracer.intersect(shadow_ray) {
-                    color += LinearRgba::rgb(
-                        light.color.red * diff.red,
-                        light.color.green * diff.green,
-                        light.color.blue * diff.blue,
-                    ) * light_coef;
+                    color += light.color * diff * light_coef;
                 }
             }
         }

@@ -4,15 +4,16 @@ use bevy_math::{Quat, Vec3};
 use bevy_transform::components::Transform;
 use image::RgbImage;
 use image::buffer::ConvertBuffer;
+use std::io::*;
 use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
-use std::io::*;
 
 mod common;
 mod cornell;
 
 mod camera;
 
+mod color;
 mod consts;
 mod geometry;
 mod raytracer;
@@ -20,7 +21,7 @@ mod renderer;
 mod tonemap;
 
 fn main() -> anyhow::Result<()> {
-    let mut instant = std::time::Instant::now();
+    let instant = std::time::Instant::now();
     let device = embree4_rs::Device::try_new(None)?;
     let mut raytracer_builder = raytracer::embree::EmbreeRayTracerBuilder::new(&device);
 

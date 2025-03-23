@@ -1,7 +1,7 @@
+use crate::color::Rgba;
 use crate::geometry::*;
 use GeomInfo::Mesh;
 use anyhow::*;
-use bevy_color::LinearRgba;
 use bevy_math::*;
 use bevy_transform::components::*;
 use gltf::{
@@ -235,7 +235,7 @@ pub fn cornell_box(store: &mut Scene) -> Result<()> {
 
     let ambient = Light {
         light_type: LightType::Ambient,
-        color: LinearRgba::rgb(0.07, 0.07, 0.07), // color: LinearRgba::rgb(1.0, 1.0, 1.0)
+        color: Rgba::rgb(0.07, 0.07, 0.07), // color: LinearRgba::rgb(1.0, 1.0, 1.0)
     };
     store.lights.push(ambient);
 
@@ -259,7 +259,7 @@ pub fn cornell_box(store: &mut Scene) -> Result<()> {
     let size = 50.0;
     for i in -1..2 {
         let area_square = Light {
-            color: LinearRgba::rgb(1.2, 1.2, 1.2),
+            color: Rgba::rgb(1.2, 1.2, 1.2),
             light_type: LightType::AreaQuad(LightQuad {
                 bottom_left: Vec3::new(250.0 + (i * 250) as f32, 545.0, 250.0 + (i * 250) as f32),
                 u_vec: Vec3::X * size,

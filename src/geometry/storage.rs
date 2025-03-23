@@ -1,7 +1,7 @@
+use crate::color::Rgba;
 use crate::geometry::{Geometry, Light, Texture};
 use crate::raytracer::{GeometryId, RayTracer, RayTracerBuilder};
 use anyhow::{Context, Result};
-use bevy_color::LinearRgba;
 use bevy_math::Vec2;
 use fxhash::FxHashMap;
 use image::ImageReader;
@@ -95,13 +95,7 @@ impl<T: RayTracer> BuiltScene<T> {
     // to avoid repetitions, this is more efficient
     // returns (diff, emissive)
     // FIX: this code is bad
-    pub fn sample_color(
-        &self,
-        geom: &Geometry,
-        prim_id: u32,
-        u: f32,
-        v: f32,
-    ) -> (LinearRgba, LinearRgba) {
+    pub fn sample_color(&self, geom: &Geometry, prim_id: u32, u: f32, v: f32) -> (Rgba, Rgba) {
         if let Texture::Solid(diff) = geom.material.texture {
             if let Texture::Solid(emissive) = geom.material.emissive {
                 return (diff, emissive);
@@ -113,12 +107,12 @@ impl<T: RayTracer> BuiltScene<T> {
         // but the sampling should also have some unneeded repetitions
         let uv = geom.compute_uv(u, v, prim_id);
 
-        let diff: LinearRgba = match geom.material.texture {
+        let diff: Rgba = match geom.material.texture {
             Texture::Solid(diff) => diff,
             Texture::Image(id) => Self::sample_texture(uv, &self.textures[id as usize]),
         };
 
-        let emissive: LinearRgba = match geom.material.emissive {
+        let emissive: Rgba = match geom.material.emissive {
             Texture::Solid(emissive) => emissive,
             Texture::Image(id) => Self::sample_texture(uv, &self.textures[id as usize]),
         };
@@ -126,9 +120,9 @@ impl<T: RayTracer> BuiltScene<T> {
         (diff, emissive)
     }
 
-    fn sample_texture(uv: Vec2, texture: &Rgba32FImage) -> LinearRgba {
-        let color = image::imageops::sample_bilinear(texture, uv.x, uv.y).expect("UV is in bounds");
-
-        LinearRgba::rgb(color[0], color[1], color[2])
+    fn sample_texture(uv: Vec2, texture: &Rgba32FImage) -> Rgba {
+        image::imageops::sample_bilinear(texture, uv.x, uv.y)
+            .expect("UV is in bounds")
+            .into()
     }
 }

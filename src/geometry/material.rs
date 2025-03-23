@@ -1,13 +1,13 @@
+use crate::color::Rgba;
 use crate::geometry::Texture;
-use bevy_color::LinearRgba;
 
 #[derive(Debug, Clone)]
 pub struct Material {
-    pub color: LinearRgba, // ambient / albedo
-    // pub emissive: LinearRgba,
-    // pub diffuse: LinearRgba,
-    pub specular: LinearRgba,     // reflections
-    pub transmission: LinearRgba, // refractions
+    pub color: Rgba, // ambient / albedo
+    // pub emissive: Rgba,
+    // pub diffuse: Rgba,
+    pub specular: Rgba,     // reflections
+    pub transmission: Rgba, // refractions
     pub refraction: f32,
     pub reflectivity: f32,
     pub transparency: f32,
@@ -18,118 +18,118 @@ pub struct Material {
 impl Default for Material {
     fn default() -> Self {
         Self {
-            color: LinearRgba::RED,
-            // diffuse: LinearRgba::RED,
-            specular: LinearRgba::RED,
-            transmission: LinearRgba::RED,
+            color: Rgba::RED,
+            // diffuse: Rgba::RED,
+            specular: Rgba::RED,
+            transmission: Rgba::RED,
             refraction: 1.0,
             reflectivity: 0.0,
             transparency: 0.0,
-            texture: Texture::Solid(LinearRgba::RED),
-            emissive: Texture::Solid(LinearRgba::NONE),
+            texture: Texture::Solid(Rgba::RED),
+            emissive: Texture::Solid(Rgba::NONE),
         }
     }
 }
 
 impl Material {
     pub const WHITE_MATERIAL: Self = Self {
-        color: LinearRgba::rgb(0.9, 0.9, 0.9),
-        texture: Texture::Solid(LinearRgba::rgb(0.4, 0.4, 0.4)),
-        specular: LinearRgba::BLACK,
-        transmission: LinearRgba::BLACK,
+        color: Rgba::rgb(0.9, 0.9, 0.9),
+        texture: Texture::Solid(Rgba::rgb(0.4, 0.4, 0.4)),
+        specular: Rgba::BLACK,
+        transmission: Rgba::BLACK,
         refraction: 1.0,
         reflectivity: 0.0,
         transparency: 0.0,
-        emissive: Texture::Solid(LinearRgba::NONE),
+        emissive: Texture::Solid(Rgba::NONE),
     };
 
     pub const RED_MATERIAL: Self = Self {
-        color: LinearRgba::rgb(0.9, 0.0, 0.0),
-        texture: Texture::Solid(LinearRgba::rgb(0.4, 0.0, 0.0)),
-        specular: LinearRgba::BLACK,
-        transmission: LinearRgba::BLACK,
+        color: Rgba::rgb(0.9, 0.0, 0.0),
+        texture: Texture::Solid(Rgba::rgb(0.4, 0.0, 0.0)),
+        specular: Rgba::BLACK,
+        transmission: Rgba::BLACK,
         refraction: 1.0,
         reflectivity: 0.0,
         transparency: 0.0,
-        emissive: Texture::Solid(LinearRgba::NONE),
+        emissive: Texture::Solid(Rgba::NONE),
     };
     pub const GREEN_MATERIAL: Self = Self {
-        color: LinearRgba::rgb(0.0, 0.9, 0.0),
-        texture: Texture::Solid(LinearRgba::rgb(0.0, 0.2, 0.0)),
-        specular: LinearRgba::BLACK,
-        transmission: LinearRgba::BLACK,
+        color: Rgba::rgb(0.0, 0.9, 0.0),
+        texture: Texture::Solid(Rgba::rgb(0.0, 0.2, 0.0)),
+        specular: Rgba::BLACK,
+        transmission: Rgba::BLACK,
         refraction: 1.0,
         reflectivity: 0.0,
         transparency: 0.0,
-        emissive: Texture::Solid(LinearRgba::NONE),
+        emissive: Texture::Solid(Rgba::NONE),
     };
     pub const BLUE_MATERIAL: Self = Self {
-        color: LinearRgba::rgb(0.0, 0.0, 0.9),
-        texture: Texture::Solid(LinearRgba::rgb(0.0, 0.0, 0.4)),
-        specular: LinearRgba::BLACK,
-        transmission: LinearRgba::BLACK,
+        color: Rgba::rgb(0.0, 0.0, 0.9),
+        texture: Texture::Solid(Rgba::rgb(0.0, 0.0, 0.4)),
+        specular: Rgba::BLACK,
+        transmission: Rgba::BLACK,
         refraction: 1.0,
         reflectivity: 0.0,
         transparency: 0.0,
-        emissive: Texture::Solid(LinearRgba::NONE),
+        emissive: Texture::Solid(Rgba::NONE),
     };
     pub const ORANGE_MATERIAL: Self = Self {
-        color: LinearRgba::rgb(0.99, 0.65, 0.0),
-        texture: Texture::Solid(LinearRgba::rgb(0.37, 0.24, 0.0)),
-        specular: LinearRgba::BLACK,
-        transmission: LinearRgba::BLACK,
+        color: Rgba::rgb(0.99, 0.65, 0.0),
+        texture: Texture::Solid(Rgba::rgb(0.37, 0.24, 0.0)),
+        specular: Rgba::BLACK,
+        transmission: Rgba::BLACK,
         refraction: 1.0,
         reflectivity: 0.0,
         transparency: 0.0,
-        emissive: Texture::Solid(LinearRgba::NONE),
+        emissive: Texture::Solid(Rgba::NONE),
     };
     pub const MIRROR_MATERIAL: Self = Self {
-        color: LinearRgba::BLACK,
-        texture: Texture::Solid(LinearRgba::BLACK),
-        specular: LinearRgba::rgb(0.9, 0.9, 0.9),
-        transmission: LinearRgba::BLACK,
+        color: Rgba::BLACK,
+        texture: Texture::Solid(Rgba::BLACK),
+        specular: Rgba::rgb(0.9, 0.9, 0.9),
+        transmission: Rgba::BLACK,
         refraction: 1.5,
         reflectivity: 1.0,
         transparency: 0.0,
-        emissive: Texture::Solid(LinearRgba::NONE),
+        emissive: Texture::Solid(Rgba::NONE),
     };
     pub const GLASS_MATERIAL: Self = Self {
-        color: LinearRgba::WHITE,
-        texture: Texture::Solid(LinearRgba::BLACK),
-        specular: LinearRgba::rgb(1.0, 1.0, 1.0),
-        transmission: LinearRgba::rgb(0.9, 0.9, 0.9),
+        color: Rgba::WHITE,
+        texture: Texture::Solid(Rgba::BLACK),
+        specular: Rgba::rgb(1.0, 1.0, 1.0),
+        transmission: Rgba::rgb(0.9, 0.9, 0.9),
         refraction: 1.125,
         reflectivity: 0.1, // try 0.01
         transparency: 1.0,
-        emissive: Texture::Solid(LinearRgba::NONE),
+        emissive: Texture::Solid(Rgba::NONE),
     };
     pub const UV_MATERIAL: Self = Self {
-        color: LinearRgba::rgb(1.0, 1.0, 1.0),
+        color: Rgba::rgb(1.0, 1.0, 1.0),
         texture: Texture::Image(0),
-        specular: LinearRgba::BLACK,
-        transmission: LinearRgba::BLACK,
+        specular: Rgba::BLACK,
+        transmission: Rgba::BLACK,
         refraction: 1.0,
         reflectivity: 0.0,
         transparency: 0.0,
-        emissive: Texture::Solid(LinearRgba::NONE),
+        emissive: Texture::Solid(Rgba::NONE),
     };
 
     pub const EMISSIVE_MATERIAL: Self = Self {
-        color: LinearRgba::rgb(1.0, 1.0, 1.0),
+        color: Rgba::rgb(1.0, 1.0, 1.0),
         texture: Texture::Image(0),
-        specular: LinearRgba::BLACK,
-        transmission: LinearRgba::BLACK,
+        specular: Rgba::BLACK,
+        transmission: Rgba::BLACK,
         refraction: 1.0,
         reflectivity: 0.0,
         transparency: 0.0,
-        emissive: Texture::Solid(LinearRgba::RED),
+        emissive: Texture::Solid(Rgba::RED),
     };
 
     pub const CUBEMAP_MATERIAL: Self = Self {
-        color: LinearRgba::BLACK,
-        texture: Texture::Solid(LinearRgba::BLACK),
-        specular: LinearRgba::BLACK,
-        transmission: LinearRgba::BLACK,
+        color: Rgba::BLACK,
+        texture: Texture::Solid(Rgba::BLACK),
+        specular: Rgba::BLACK,
+        transmission: Rgba::BLACK,
         refraction: 1.0,
         reflectivity: 0.0,
         transparency: 0.0,

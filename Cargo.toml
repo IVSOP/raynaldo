@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.97"
-bevy_color = "0.15.4"
 bevy_math = "0.15.3"
 bevy_transform = { version = "0.15.3", default-features = false } # no need for bevy support
 embree4-rs = { git = "https://github.com/ivsop/embree4-rs/", rev = "9317565638f6e25a592e3e42f26033bf203bd0b8" }

@@ -1,10 +1,10 @@
-use bevy_color::LinearRgba;
 use bevy_math::*;
 
 mod storage;
 pub use storage::*;
 
 mod material;
+use crate::color::Rgba;
 pub use material::*;
 
 #[derive(Clone)]
@@ -23,11 +23,9 @@ pub struct MeshGeometry {
 impl MeshGeometry {
     pub fn transform(&mut self, matrix: Mat4) {
         for vert in &mut self.verts {
-            let pos = Vec4::new(vert.0, vert.1, vert.2, 1.0);
+            let pos = Vec3::from(*vert).extend(1.0);
             let new_pos = matrix * pos;
-            vert.0 = new_pos.x;
-            vert.1 = new_pos.y;
-            vert.2 = new_pos.z;
+            *vert = new_pos.www().into();
         }
     }
 }
@@ -95,13 +93,13 @@ impl Geometry {
 
 #[derive(Debug, Clone)]
 pub enum Texture {
-    Solid(LinearRgba),
+    Solid(Rgba),
     Image(u32), // an id
 }
 
 pub struct Light {
     pub light_type: LightType,
-    pub color: LinearRgba,
+    pub color: Rgba,
 }
 
 pub enum LightType {
