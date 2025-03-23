@@ -25,7 +25,7 @@ impl MeshGeometry {
         for vert in &mut self.verts {
             let pos = Vec3::from(*vert).extend(1.0);
             let new_pos = matrix * pos;
-            *vert = new_pos.www().into();
+            *vert = new_pos.xyz().into();
         }
     }
 }
