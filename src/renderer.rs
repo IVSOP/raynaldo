@@ -3,7 +3,7 @@ use crate::color::Rgba;
 use crate::consts::{AIR_REFRACT, Consts, EPSILON};
 use crate::geometry::{BuiltScene, Geometry, Light, LightQuad, LightType, Material};
 use crate::raytracer::{Ray, RayTracer};
-use bevy_math::Vec3;
+use glam::Vec3;
 use image::{Rgb, Rgb32FImage};
 use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;

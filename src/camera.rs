@@ -1,5 +1,5 @@
 use crate::raytracer::Ray;
-use bevy_math::*;
+use glam::Vec3;
 
 #[derive(Debug)]
 pub struct Camera {

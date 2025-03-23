@@ -1,4 +1,4 @@
-use bevy_math::*;
+use glam::Vec3;
 
 pub const EPSILON: f32 = 1e-3;
 pub const AIR_REFRACT: f32 = 1.00029;

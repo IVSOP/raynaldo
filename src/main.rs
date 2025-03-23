@@ -1,7 +1,6 @@
 use crate::consts::Consts;
 use anyhow::Context;
-use bevy_math::{Quat, Vec3};
-use bevy_transform::components::Transform;
+use glam::{Quat, Vec3};
 use image::RgbImage;
 use image::buffer::ConvertBuffer;
 use std::io::*;
@@ -37,16 +36,16 @@ fn main() -> anyhow::Result<()> {
     cornell::cornell_box(&mut scene)?;
 
     let (gltf_doc, gltf_buff, _) = gltf::import("assets/magujo/suzanne.glb")?;
-    let transform = Transform {
-        translation: Vec3::new(450.0, 50.0, 150.0),
-        rotation: Quat::from_rotation_y(220.0_f32.to_radians()),
-        scale: Vec3::splat(50.0),
-    };
+    let transform = glam::Mat4::from_scale_rotation_translation(
+        Vec3::splat(50.0),
+        Quat::from_rotation_y(220.0_f32.to_radians()),
+        Vec3::new(450.0, 50.0, 150.0),
+    );
     cornell::add_gltf(
         &mut scene,
         &gltf_doc,
         &gltf_buff,
-        transform.compute_matrix(),
+        transform,
         &geometry::Material::MIRROR_MATERIAL,
     )?;
 

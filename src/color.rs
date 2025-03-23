@@ -1,12 +1,12 @@
-use bevy_math::Vec4;
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Rgba {
-    color: Vec4,
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32,
 }
-
-impl Rgba {}
 
 impl Rgba {
     pub const BLACK: Self = Self::new(0.0, 0.0, 0.0, 1.0);
@@ -15,9 +15,7 @@ impl Rgba {
     pub const NONE: Self = Self::new(0.0, 0.0, 0.0, 0.0);
 
     pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
-        Self {
-            color: Vec4::new(r, g, b, a),
-        }
+        Self { r, g, b, a }
     }
 
     pub const fn rgb(r: f32, g: f32, b: f32) -> Rgba {
@@ -25,13 +23,15 @@ impl Rgba {
     }
 }
 
-impl<T: Into<Rgba>> Add<T> for Rgba {
+impl Add for Rgba {
     type Output = Rgba;
 
-    fn add(self, rhs: T) -> Self::Output {
-        let rhs = rhs.into();
+    fn add(self, rhs: Self) -> Self::Output {
         Rgba {
-            color: self.color + rhs.color,
+            r: self.r + rhs.r,
+            g: self.g + rhs.g,
+            b: self.b + rhs.b,
+            a: self.a + rhs.a,
         }
     }
 }
@@ -41,14 +41,20 @@ impl Div<f32> for Rgba {
 
     fn div(self, rhs: f32) -> Self::Output {
         Rgba {
-            color: self.color / rhs,
+            r: self.r / rhs,
+            g: self.g / rhs,
+            b: self.b / rhs,
+            a: self.a / rhs,
         }
     }
 }
 
 impl AddAssign for Rgba {
     fn add_assign(&mut self, rhs: Self) {
-        self.color += rhs.color;
+        self.r += rhs.r;
+        self.g += rhs.g;
+        self.b += rhs.b;
+        self.a += rhs.a;
     }
 }
 
@@ -57,7 +63,10 @@ impl Mul for Rgba {
 
     fn mul(self, rhs: Self) -> Self::Output {
         Rgba {
-            color: self.color * rhs.color,
+            r: self.r * rhs.r,
+            g: self.g * rhs.g,
+            b: self.b * rhs.b,
+            a: self.a * rhs.a,
         }
     }
 }
@@ -67,28 +76,32 @@ impl Mul<f32> for Rgba {
 
     fn mul(self, rhs: f32) -> Self::Output {
         Rgba {
-            color: self.color * rhs,
+            r: self.r * rhs,
+            g: self.g * rhs,
+            b: self.b * rhs,
+            a: self.a * rhs,
         }
     }
 }
 
 impl MulAssign<f32> for Rgba {
     fn mul_assign(&mut self, rhs: f32) {
-        self.color *= rhs;
+        self.r *= rhs;
+        self.g *= rhs;
+        self.b *= rhs;
+        self.a *= rhs;
     }
 }
 
 impl Into<image::Rgba<f32>> for Rgba {
     fn into(self) -> image::Rgba<f32> {
-        let [r, g, b, a] = self.color.into();
-        image::Rgba([r, g, b, a])
+        image::Rgba([self.r, self.g, self.b, self.a])
     }
 }
 
 impl Into<image::Rgb<f32>> for Rgba {
     fn into(self) -> image::Rgb<f32> {
-        let [r, g, b, _a] = self.color.into();
-        image::Rgb([r, g, b])
+        image::Rgb([self.r, self.g, self.b])
     }
 }
 

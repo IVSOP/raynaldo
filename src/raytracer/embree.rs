@@ -1,8 +1,8 @@
 use crate::geometry::{GeomInfo, Geometry};
 use crate::raytracer::{GeometryId, Ray, RayHitResult, RayTracer, RayTracerBuilder};
-use bevy_math::Vec3;
 use embree4_rs::geometry::SphereGeometry;
 use embree4_sys::{RTCRay, RTCRayHit};
+use glam::Vec3;
 
 pub struct EmbreeRayTracerBuilder<'a> {
     scene: embree4_rs::Scene<'a>,

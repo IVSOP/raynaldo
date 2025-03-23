@@ -1,4 +1,4 @@
-use bevy_math::Vec3;
+use glam::Vec3;
 
 pub mod embree;
 

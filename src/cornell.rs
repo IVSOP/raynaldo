@@ -2,8 +2,7 @@ use crate::color::Rgba;
 use crate::geometry::*;
 use GeomInfo::Mesh;
 use anyhow::*;
-use bevy_math::*;
-use bevy_transform::components::*;
+use glam::{Mat4, Quat, Vec2, Vec3, Vec4};
 use gltf::{
     // Gltf,
     // buffer::Data,
@@ -221,13 +220,13 @@ pub fn cornell_box(store: &mut Scene) -> Result<()> {
     let (cube_gltf_doc, cube_gltf_buff, _) = gltf::import("assets/cube.glb")?;
     let cube_mesh = get_gltf_meshes(&cube_gltf_doc, &cube_gltf_buff)[0].clone();
 
-    let transform = Transform {
-        translation: Vec3::new(350.0, 50.0, 75.0),
-        scale: Vec3::splat(50.0),
-        ..Transform::default()
-    };
+    let transform = glam::Mat4::from_scale_rotation_translation(
+        Vec3::splat(50.0),
+        Quat::default(),
+        Vec3::new(350.0, 50.0, 75.0),
+    );
     let mut bright_red_cube = cube_mesh.clone();
-    bright_red_cube.transform(transform.compute_matrix());
+    bright_red_cube.transform(transform);
     store.add_geometry(Geometry::with_material(
         Material::EMISSIVE_MATERIAL,
         Mesh(bright_red_cube),
@@ -409,20 +408,20 @@ pub fn add_skybox(store: &mut Scene) -> Result<()> {
     let mut bottom_material = Material::CUBEMAP_MATERIAL;
     bottom_material.emissive = Texture::Image(6);
 
-    let transform = Transform {
-        scale: Vec3::splat(10000.0),
-        ..Default::default()
-    };
-    let matrix = transform.compute_matrix();
+    let transform = Mat4::from_scale_rotation_translation(
+        Vec3::splat(10000.0),
+        Default::default(),
+        Default::default(),
+    );
 
-    let bottom_left_front = matrix * Vec4::new(-0.5, -0.5, 0.5, 1.0);
-    let top_left_front = matrix * Vec4::new(-0.5, 0.5, 0.5, 1.0);
-    let top_right_front = matrix * Vec4::new(0.5, 0.5, 0.5, 1.0);
-    let bottom_right_front = matrix * Vec4::new(0.5, -0.5, 0.5, 1.0);
-    let bottom_left_back = matrix * Vec4::new(-0.5, -0.5, -0.5, 1.0);
-    let top_left_back = matrix * Vec4::new(-0.5, 0.5, -0.5, 1.0);
-    let top_right_back = matrix * Vec4::new(0.5, 0.5, -0.5, 1.0);
-    let bottom_right_back = matrix * Vec4::new(0.5, -0.5, -0.5, 1.0);
+    let bottom_left_front = transform * Vec4::new(-0.5, -0.5, 0.5, 1.0);
+    let top_left_front = transform * Vec4::new(-0.5, 0.5, 0.5, 1.0);
+    let top_right_front = transform * Vec4::new(0.5, 0.5, 0.5, 1.0);
+    let bottom_right_front = transform * Vec4::new(0.5, -0.5, 0.5, 1.0);
+    let bottom_left_back = transform * Vec4::new(-0.5, -0.5, -0.5, 1.0);
+    let top_left_back = transform * Vec4::new(-0.5, 0.5, -0.5, 1.0);
+    let top_right_back = transform * Vec4::new(0.5, 0.5, -0.5, 1.0);
+    let bottom_right_back = transform * Vec4::new(0.5, -0.5, -0.5, 1.0);
 
     front.indices.push((0, 1, 2));
     front.indices.push((0, 2, 3));
