@@ -1,5 +1,6 @@
 use crate::camera::Camera;
 use crate::color::Rgba;
+use crate::common::compute_reflection_coeff;
 use crate::consts::{AIR_REFRACT, Consts, EPSILON};
 use crate::geometry::{BuiltScene, Geometry, Light, LightQuad, LightType, Material};
 use crate::raytracer::{Ray, RayTracer};
@@ -71,8 +72,9 @@ impl<T: RayTracer> Renderer<T> {
             let (diff, emissive) = self.scene.sample_color(geometry, triangle_id, u, v);
 
             color += self.direct_lighting(hit_pos, normal, &material, diff);
-            color +=
-                self.reflect_refract(hit_pos, ray_dir, normal, diff, refraction, material, depth);
+            color += self.reflect_refract_scatter(
+                hit_pos, ray_dir, normal, diff, refraction, material, depth,
+            );
 
             color += emissive;
 
@@ -106,66 +108,18 @@ impl<T: RayTracer> Renderer<T> {
         color
     }
 
-    /// use schlick approximation to compute fraction of light specularly reflected at a surface (fresnel)
-    pub fn compute_reflection_coeff(
-        &self,
-        incident_dir: Vec3,
-        normal: Vec3,
-        n1: f32, // refraction being left
-        n2: f32, // refraction being entered
-        material: &Material,
-    ) -> f32 {
-        let mut r0 = (n1 - n2) / (n1 + n2);
-        r0 *= r0;
-        let mut cos_x = -normal.dot(incident_dir);
-        if n1 > n2 {
-            let n = n1 / n2;
-            let sin_t2 = n * n * (1.0 - cos_x * cos_x);
-            // Total internal reflection
-            if sin_t2 > 1.0 {
-                return 1.0;
-            }
-            cos_x = (1.0 - sin_t2).sqrt();
-        }
-        let x = 1.0 - cos_x;
-        let ret = r0 + (1.0 - r0) * x * x * x * x * x;
-
-        material.reflectivity + (1.0 - material.reflectivity) * ret
-    }
-
-    pub fn reflect_refract(
+    pub fn reflect(
         &self,
         hit: Vec3,
         incident_dir: Vec3,
         normal: Vec3,
-        diff: Rgba,
-        ray_refraction: f32,
         material: &Material,
         depth: u32,
+        n1: f32,
+        reflect: f32,
     ) -> Rgba {
-        // n1 is refraction being left
-        // n2 is refraction being entered
-
-        let n1: f32;
-        let n2: f32;
-
-        // WARNING nao tenho como saber se o raio esta a sair ou entrar no material,
-        // nem qual o indice de refracao que devo usar ao sair, entao tive de fazer esta manhosice
-        if ray_refraction == AIR_REFRACT {
-            // raytracer is coming from outside, entering
-            n1 = AIR_REFRACT;
-            n2 = material.refraction;
-        } else {
-            // raytracer is leaving
-            n1 = material.refraction;
-            n2 = AIR_REFRACT;
-        }
-
-        let reflect = self.compute_reflection_coeff(incident_dir, normal, n1, n2, material);
-        let refract = 1.0 - reflect;
-
-        // REFLECTION, for materials with reflectivity
         let mut color = Rgba::BLACK;
+
         if reflect > 0.0 && material.reflectivity > 0.0 {
             let refdir = incident_dir.reflect(normal);
 
@@ -184,7 +138,22 @@ impl<T: RayTracer> Renderer<T> {
             color = material.specular * color * reflect; // no need to multiply by reflectivity of the material, fresnel already takes it into account
         }
 
-        // REFRACTION, for materials with transparency
+        color
+    }
+
+    pub fn refract(
+        &self,
+        hit: Vec3,
+        incident_dir: Vec3,
+        normal: Vec3,
+        material: &Material,
+        depth: u32,
+        n1: f32,
+        n2: f32,
+        refract: f32,
+    ) -> Rgba {
+        let mut color = Rgba::BLACK;
+
         if refract > 0.0 && material.transparency > 0.0 {
             let eta = n1 / n2; // Ratio of IORs
             let facing_normal = if incident_dir.dot(normal) < 0.0 {
@@ -215,15 +184,27 @@ impl<T: RayTracer> Renderer<T> {
             }
         }
 
-        // SCATTERING
-        // WARN: limited to the first ever hit
-        // uses what's left after reflection (like refraction), but assumes the material does not refract
+        color
+    }
+
+    // WARN: limited to the first ever hit
+    pub fn basic_scatter(
+        &self,
+        hit: Vec3,
+        normal: Vec3,
+        material: &Material,
+        depth: u32,
+        n1: f32,
+        refract: f32,
+        diff: Rgba,
+    ) -> Rgba {
+        let mut color = Rgba::BLACK;
+
         if depth == 0 {
-            let diffuse_strength = 1.0; // TEMPORARY
             let diffuse_weight = if material.transparency > 0.0 {
                 0.0
             } else {
-                (1.0 - reflect) * diffuse_strength // Diffuse takes what's left after reflection
+                refract * Consts::DIFFUSE_STRENGTH // Diffuse takes what's left after reflection
             };
 
             if diffuse_weight > 0.0 {
@@ -243,6 +224,50 @@ impl<T: RayTracer> Renderer<T> {
                 }
             }
         }
+
+        color
+    }
+
+    pub fn reflect_refract_scatter(
+        &self,
+        hit: Vec3,
+        incident_dir: Vec3,
+        normal: Vec3,
+        diff: Rgba,
+        ray_eta: f32,
+        material: &Material,
+        depth: u32,
+    ) -> Rgba {
+        // n1 is refraction being left
+        // n2 is refraction being entered
+
+        let n1: f32;
+        let n2: f32;
+
+        // WARNING nao tenho como saber se o raio esta a sair ou entrar no material,
+        // nem qual o indice de refracao que devo usar ao sair, entao tive de fazer esta manhosice
+        if ray_eta == AIR_REFRACT {
+            // raytracer is coming from outside, entering
+            n1 = AIR_REFRACT;
+            n2 = material.refraction;
+        } else {
+            // raytracer is leaving
+            n1 = material.refraction;
+            n2 = AIR_REFRACT;
+        }
+
+        let reflect = compute_reflection_coeff(incident_dir, normal, n1, n2, material.reflectivity);
+        let refract = 1.0 - reflect;
+
+        // reflection, for materials with reflectivity
+        let mut color = self.reflect(hit, incident_dir, normal, material, depth, n1, reflect);
+
+        // refraction, for materials with transparency
+        color += self.refract(hit, incident_dir, normal, material, depth, n1, n2, refract);
+
+        // scattering
+        // uses what's left after reflection (like refraction), but assumes the material does not refract
+        color += self.basic_scatter(hit, normal, material, depth, n1, refract, diff);
 
         color
     }

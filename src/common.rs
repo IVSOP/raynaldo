@@ -43,3 +43,29 @@ pub fn _rand_dir2() -> Vec2 {
 pub fn default<T: Default>() -> T {
     Default::default()
 }
+
+/// use schlick approximation to compute fraction of light specularly reflected at a surface (fresnel)
+pub fn compute_reflection_coeff(
+    incident_dir: Vec3,
+    normal: Vec3,
+    n1: f32, // refraction being left
+    n2: f32, // refraction being entered
+    material_reflectivity: f32,
+) -> f32 {
+    let mut r0 = (n1 - n2) / (n1 + n2);
+    r0 *= r0;
+    let mut cos_x = -normal.dot(incident_dir);
+    if n1 > n2 {
+        let n = n1 / n2;
+        let sin_t2 = n * n * (1.0 - cos_x * cos_x);
+        // Total internal reflection
+        if sin_t2 > 1.0 {
+            return 1.0;
+        }
+        cos_x = (1.0 - sin_t2).sqrt();
+    }
+    let x = 1.0 - cos_x;
+    let ret = r0 + (1.0 - r0) * x * x * x * x * x;
+
+    material_reflectivity + (1.0 - material_reflectivity) * ret
+}

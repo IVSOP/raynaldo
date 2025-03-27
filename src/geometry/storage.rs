@@ -38,8 +38,7 @@ impl Scene {
         self.geometry.push(geom);
     }
 
-    // I assume opening the file is very fast but decoding() and into_rgba32f() are slow, so I just made the whole thing parallel
-    // cursed, does not error out instantly
+    // decoding and into_rgba32f is actually pretty slow so use this if loading many images
     pub fn add_textures_batch_from_files(&mut self, paths: &[&str]) -> Result<()> {
         let new_textures: Result<Vec<Rgba32FImage>> = paths
             .par_iter() // Parallel iterator
