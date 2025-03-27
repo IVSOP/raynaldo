@@ -188,7 +188,9 @@ impl<T: RayTracer> Renderer<T> {
     }
 
     // WARN: limited to the first ever hit
-    pub fn basic_scatter(
+    // WARN: exponentially slow, each hit causes N other hits
+    // (which is why I stopped it in the first hit)
+    pub fn _loop_scatter(
         &self,
         hit: Vec3,
         normal: Vec3,
@@ -200,12 +202,9 @@ impl<T: RayTracer> Renderer<T> {
     ) -> Rgba {
         let mut color = Rgba::BLACK;
 
-        if depth == 0 {
-            let diffuse_weight = if material.transparency > 0.0 {
-                0.0
-            } else {
-                refract * Consts::DIFFUSE_STRENGTH // Diffuse takes what's left after reflection
-            };
+        if depth == 0 && material.transparency <= 0.0 {
+            // takes what's left after reflection
+            let diffuse_weight = refract * Consts::DIFFUSE_STRENGTH;
 
             if diffuse_weight > 0.0 {
                 for _ in 0..Consts::NUM_SCATTER {
@@ -215,12 +214,54 @@ impl<T: RayTracer> Renderer<T> {
                     let scatter_ray = Ray::new(origin, scatter_dir);
                     let scattered_color = self.trace(scatter_ray, n1, depth + 1);
                     let cos_theta = scatter_dir.dot(normal).max(0.0);
-                    // TODO what color from the current material should I be using???
+
                     color += scattered_color
                         * diff
                         * diffuse_weight
                         * cos_theta
                         * (1.0 / Consts::NUM_SCATTER as f32);
+                }
+            }
+        }
+
+        color
+    }
+
+    // randomly decides if ray should scatter or not
+    // only scatters once
+    pub fn scatter_rand(
+        &self,
+        hit: Vec3,
+        normal: Vec3,
+        material: &Material,
+        depth: u32,
+        n1: f32,
+        refract: f32,
+        diff: Rgba,
+    ) -> Rgba {
+        let mut color = Rgba::BLACK;
+
+        // TODO: check if diff != 0 before starting?
+
+        if material.transparency <= 0.0 {
+            // randomly choose if we scatter
+            if fastrand::f32() <= Consts::SCATTER_PROBABILITY {
+                // takes what's left after reflection
+                let diffuse_weight = refract * Consts::DIFFUSE_STRENGTH;
+
+                if diffuse_weight > 0.0 {
+                    let scatter_dir = sample_cos_hemisphere(normal);
+                    let offset = EPSILON * normal;
+                    let origin = hit + offset;
+                    let scatter_ray = Ray::new(origin, scatter_dir);
+                    let scattered_color = self.trace(scatter_ray, n1, depth + 1);
+                    let cos_theta = scatter_dir.dot(normal).max(0.0);
+
+                    color += scattered_color
+                        * diff
+                        * diffuse_weight
+                        * cos_theta
+                        * (1.0 / Consts::SCATTER_PROBABILITY);
                 }
             }
         }
@@ -267,7 +308,7 @@ impl<T: RayTracer> Renderer<T> {
 
         // scattering
         // uses what's left after reflection (like refraction), but assumes the material does not refract
-        color += self.basic_scatter(hit, normal, material, depth, n1, refract, diff);
+        color += self.scatter_rand(hit, normal, material, depth, n1, refract, diff);
 
         color
     }

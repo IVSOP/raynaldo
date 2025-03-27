@@ -18,6 +18,7 @@ impl Consts {
     pub const RAYS_PER_PIXEL: u32 = 10;
     pub const NUM_SCATTER: u32 = 1;
     pub const DIFFUSE_STRENGTH: f32 = 1.0; // acho que isto nunca vai ser alterado mas fica aqui
+    pub const SCATTER_PROBABILITY: f32 = 0.2;
 }
 
 #[cfg(not(debug_assertions))]
@@ -33,4 +34,5 @@ impl Consts {
     pub const RAYS_PER_PIXEL: u32 = 20;
     pub const NUM_SCATTER: u32 = 5;
     pub const DIFFUSE_STRENGTH: f32 = 1.0; // acho que isto nunca vai ser alterado mas fica aqui
+    pub const SCATTER_PROBABILITY: f32 = 0.3;
 }
