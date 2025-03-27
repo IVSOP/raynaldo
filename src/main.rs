@@ -1,4 +1,3 @@
-use crate::consts::Consts;
 use anyhow::Context;
 use glam::{Quat, Vec3};
 use image::RgbImage;
@@ -7,17 +6,17 @@ use std::io::*;
 use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
 
-mod common;
-mod cornell;
-
 mod camera;
-
 mod color;
-mod consts;
+mod common;
+mod configs;
+mod cornell;
 mod geometry;
 mod raytracer;
 mod renderer;
 mod tonemap;
+
+use configs::*;
 
 fn main() -> anyhow::Result<()> {
     let instant = std::time::Instant::now();
@@ -55,20 +54,17 @@ fn main() -> anyhow::Result<()> {
         .build_scene(&mut raytracer_builder)
         .context("Error building scene")?;
 
-    let renderer = renderer::Renderer::new(scene);
-    let camera = camera::Camera::new(
-        Consts::CAM_POS,
-        Consts::CAM_LOOKAT,
-        Vec3::Y,
-        Consts::W,
-        Consts::H,
-        Consts::CAM_FOV,
-    );
+    // configs
+    let renderconfig = RenderConfig::SLOWEST_RAND;
+    let camconfig = CamConfig::SLOW;
+    let number_of_pixels = (camconfig.w * camconfig.h) as usize;
+
+    let renderer = renderer::Renderer::new(scene, renderconfig);
+    let camera = camera::Camera::new(camconfig);
 
     println!("Builing scene took: {:?}", instant.elapsed());
     let instant = std::time::Instant::now();
 
-    let number_of_pixels = (Consts::W * Consts::H) as usize;
     let rendered_pixels = Arc::new(AtomicUsize::new(0));
 
     let progress_rendered_pixels = Arc::clone(&rendered_pixels);

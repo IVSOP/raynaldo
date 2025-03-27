@@ -1,7 +1,7 @@
 use crate::camera::Camera;
 use crate::color::Rgba;
 use crate::common::compute_reflection_coeff;
-use crate::consts::{AIR_REFRACT, Consts, EPSILON};
+use crate::configs::RenderConfig;
 use crate::geometry::{BuiltScene, Geometry, Light, LightQuad, LightType, Material};
 use crate::raytracer::{Ray, RayTracer};
 use glam::Vec3;
@@ -9,13 +9,19 @@ use image::{Rgb, Rgb32FImage};
 use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
 
+pub const EPSILON: f32 = 1e-3;
+pub const AIR_REFRACT: f32 = 1.00029;
+
 pub struct Renderer<T: RayTracer> {
     scene: BuiltScene<T>,
+    config: RenderConfig,
 }
 
 impl<T: RayTracer + Sync> Renderer<T> {
     pub fn render_par(&self, camera: &Camera) -> Rgb32FImage {
-        Rgb32FImage::from_par_fn(camera.w, camera.h, |x, y| self.render_pixel(x, y, camera))
+        Rgb32FImage::from_par_fn(camera.config.w, camera.config.h, |x, y| {
+            self.render_pixel(x, y, camera)
+        })
     }
 
     pub fn render_par_with_progress(
@@ -23,7 +29,7 @@ impl<T: RayTracer + Sync> Renderer<T> {
         camera: &Camera,
         progress: Arc<AtomicUsize>,
     ) -> Rgb32FImage {
-        Rgb32FImage::from_par_fn(camera.w, camera.h, |x, y| {
+        Rgb32FImage::from_par_fn(camera.config.w, camera.config.h, |x, y| {
             let result = self.render_pixel(x, y, camera);
             progress.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             result
@@ -32,24 +38,24 @@ impl<T: RayTracer + Sync> Renderer<T> {
 }
 
 impl<T: RayTracer> Renderer<T> {
-    pub fn new(scene: BuiltScene<T>) -> Self {
-        Self { scene }
+    pub fn new(scene: BuiltScene<T>, config: RenderConfig) -> Self {
+        Self { scene, config }
     }
 
     pub fn render_pixel(&self, x: u32, y: u32, camera: &Camera) -> Rgb<f32> {
         let mut result = Rgba::BLACK;
 
-        for _ in 0..Consts::RAYS_PER_PIXEL {
+        for _ in 0..self.config.rays_per_pixel {
             let ray = camera.generate_ray(x, y, (fastrand::f32(), fastrand::f32()));
 
-            result += self.trace(ray, AIR_REFRACT, 0) / Consts::RAYS_PER_PIXEL as f32;
+            result += self.trace(ray, AIR_REFRACT, 0) / self.config.rays_per_pixel as f32;
         }
 
         result.into()
     }
 
     fn trace(&self, ray: Ray, refraction: f32, depth: u32) -> Rgba {
-        if depth > Consts::MAX_DEPTH {
+        if depth > self.config.max_depth {
             // TODO: save this somewhere
             return Rgba::BLACK;
         }
@@ -95,7 +101,7 @@ impl<T: RayTracer> Renderer<T> {
 
         let lights = &self.scene.lights;
 
-        if Consts::COMPARE_ALL_LIGHTS {
+        if self.config.compare_all_lights {
             // loop over all light sources
             for light in lights.iter() {
                 color += self.handle_light(light, hit_pos, normal, material, diffuse);
@@ -190,7 +196,7 @@ impl<T: RayTracer> Renderer<T> {
     // WARN: limited to the first ever hit
     // WARN: exponentially slow, each hit causes N other hits
     // (which is why I stopped it in the first hit)
-    pub fn _loop_scatter(
+    pub fn loop_scatter(
         &self,
         hit: Vec3,
         normal: Vec3,
@@ -204,10 +210,10 @@ impl<T: RayTracer> Renderer<T> {
 
         if depth == 0 && material.transparency <= 0.0 {
             // takes what's left after reflection
-            let diffuse_weight = refract * Consts::DIFFUSE_STRENGTH;
+            let diffuse_weight = refract * self.config.diffuse_strength;
 
             if diffuse_weight > 0.0 {
-                for _ in 0..Consts::NUM_SCATTER {
+                for _ in 0..self.config.num_scatter {
                     let scatter_dir = sample_cos_hemisphere(normal);
                     let offset = EPSILON * normal;
                     let origin = hit + offset;
@@ -219,7 +225,7 @@ impl<T: RayTracer> Renderer<T> {
                         * diff
                         * diffuse_weight
                         * cos_theta
-                        * (1.0 / Consts::NUM_SCATTER as f32);
+                        * (1.0 / self.config.num_scatter as f32);
                 }
             }
         }
@@ -245,9 +251,9 @@ impl<T: RayTracer> Renderer<T> {
 
         if material.transparency <= 0.0 {
             // randomly choose if we scatter
-            if fastrand::f32() <= Consts::SCATTER_PROBABILITY {
+            if fastrand::f32() <= self.config.scatter_probability {
                 // takes what's left after reflection
-                let diffuse_weight = refract * Consts::DIFFUSE_STRENGTH;
+                let diffuse_weight = refract * self.config.diffuse_strength;
 
                 if diffuse_weight > 0.0 {
                     let scatter_dir = sample_cos_hemisphere(normal);
@@ -261,7 +267,7 @@ impl<T: RayTracer> Renderer<T> {
                         * diff
                         * diffuse_weight
                         * cos_theta
-                        * (1.0 / Consts::SCATTER_PROBABILITY);
+                        * (1.0 / self.config.scatter_probability);
                 }
             }
         }
@@ -308,7 +314,11 @@ impl<T: RayTracer> Renderer<T> {
 
         // scattering
         // uses what's left after reflection (like refraction), but assumes the material does not refract
-        color += self.scatter_rand(hit, normal, material, depth, n1, refract, diff);
+        if self.config.use_random_scatter {
+            color += self.scatter_rand(hit, normal, material, depth, n1, refract, diff);
+        } else {
+            color += self.loop_scatter(hit, normal, material, depth, n1, refract, diff);
+        }
 
         color
     }
@@ -391,7 +401,7 @@ impl<T: RayTracer> Renderer<T> {
         // if material.diffuse.red > 0.0 || material.diffuse.green > 0.0 || material.diffuse.blue > 0.0
         // {
         let mut color = Rgba::BLACK;
-        for _ in 0..Consts::NUM_AREA_LIGHT_TESTS {
+        for _ in 0..self.config.num_area_light_tests {
             let u = fastrand::f32();
             let v = fastrand::f32();
 
@@ -403,7 +413,7 @@ impl<T: RayTracer> Renderer<T> {
             let dir_to_light = (light_pos - hit_pos).normalize();
 
             let light_cos = dir_to_light.dot(normal);
-            let light_coef = light_cos / Consts::NUM_AREA_LIGHT_TESTS as f32;
+            let light_coef = light_cos / self.config.num_area_light_tests as f32;
             if light_cos > 0.0 {
                 // make a raytracer to the light source to check if there is a clear path from the hit position to the light
                 // if there is, add light contribution

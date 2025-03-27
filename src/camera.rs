@@ -1,9 +1,10 @@
+use crate::configs::CamConfig;
 use crate::raytracer::Ray;
 use glam::Vec3;
 
 #[derive(Debug)]
 pub struct Camera {
-    pub pos: Vec3,
+    pub config: CamConfig,
     // pub up: Vec3,
     // pub at_point: Vec3,
     /// Location of pixel 0, 0
@@ -12,25 +13,24 @@ pub struct Camera {
     pub pixel_delta_u: Vec3,
     /// Offset to pixel below
     pub pixel_delta_v: Vec3,
-
     // pub tan_halfh: f32,
-    pub w: u32,
-    pub h: u32,
 }
 
 impl Camera {
-    pub fn new(pos: Vec3, at_point: Vec3, up: Vec3, w_u32: u32, h_u32: u32, h_fov: f32) -> Self {
-        let w = w_u32 as f32;
-        let h = h_u32 as f32;
+    pub fn new(config: CamConfig) -> Self {
+        let w = config.w as f32;
+        let h = config.h as f32;
 
-        let forward = (at_point - pos).normalize();
-        let right = forward.cross(up).normalize();
+        const UP: Vec3 = Vec3::Y;
+
+        let forward = (config.lookat - config.pos).normalize();
+        let right = forward.cross(UP).normalize();
         // recompute UP exactly as the cross product  right X forward
         let up = right.cross(forward).normalize();
 
         // Determine viewport dimensions.
         // precompute the tangents
-        let tan_halfh = (h_fov / 2.0).tan();
+        let tan_halfh = (config.fov / 2.0).tan();
         let vp_h = 2.0 * tan_halfh;
         let vp_w = vp_h * (w / h);
 
@@ -42,7 +42,7 @@ impl Camera {
         let pixel_delta_v = vp_v / h;
 
         // Calculate the location of the upper left pixel.
-        let vp_upper_left = (pos + forward) - ((vp_u / 2.0) + (vp_v / 2.0));
+        let vp_upper_left = (config.pos + forward) - ((vp_u / 2.0) + (vp_v / 2.0));
 
         let pixel00_loc = vp_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
@@ -60,15 +60,13 @@ impl Camera {
         // panic!();
 
         Self {
-            pos,
+            config,
             // up,
             // at_point,
             pixel00_loc,
             pixel_delta_u,
             pixel_delta_v,
             // tan_halfh,
-            w: w_u32,
-            h: h_u32,
             // TODO: REMOVE
             // background: LinearRgba::new(0.1, 0.1, 0.8, 1.0),
         }
@@ -79,8 +77,8 @@ impl Camera {
 
         let pixel_sample =
             self.pixel00_loc + (pc.x * self.pixel_delta_u) + (pc.y * self.pixel_delta_v);
-        let dir = (pixel_sample - self.pos).normalize();
+        let dir = (pixel_sample - self.config.pos).normalize();
 
-        Ray::new(self.pos, dir)
+        Ray::new(self.config.pos, dir)
     }
 }
