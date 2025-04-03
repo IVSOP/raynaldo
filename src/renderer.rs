@@ -474,13 +474,14 @@ impl<T: RayTracer> Renderer<T> {
 
             // all the logic here is copied from point lights except NUM_AREA_LIGHT_TESTS
 
-            let distance_to_light = (light_pos - hit_pos).length();
-            let dir_to_light = (light_pos - hit_pos).normalize();
+            let to_light = light_pos - hit_pos;
+            let distance_to_light = to_light.length();
+            let dir_to_light = to_light.normalize();
 
             let light_cos = dir_to_light.dot(normal);
-            let light_coef = light_cos / self.config.num_area_light_tests as f32;
+            // let light_coef = light_cos / self.config.num_area_light_tests as f32;
             if light_cos > 0.0 {
-                // make a raytracer to the light source to check if there is a clear path from the hit position to the light
+                // make a ray to the light source to check if there is a clear path from the hit position to the light
                 // if there is, add light contribution
 
                 let mut offset = EPSILON * normal;
@@ -496,14 +497,20 @@ impl<T: RayTracer> Renderer<T> {
                 );
 
                 // we have a direct path to the light, can add direct illumination
-                if let None = self.scene.raytracer.intersect(shadow_ray) {
-                    let mut current_color = light.color * diff * light_coef;
-                    if distance_to_light > 0.0 {
-                        // current_color *= 1.0 / (distance_to_light * distance_to_light);
-                        current_color /= distance_to_light * distance_to_light;
-                    }
+                if distance_to_light > 0.0 {
+                    if let None = self.scene.raytracer.intersect(shadow_ray) {
+                        // I don't really like this but I had to match someone else's code
+                        let light_normal = (square.u_vec.cross(square.v_vec)).normalize();
 
-                    color += current_color;
+                        // color of the light * color of object * cos from the object to the light
+                        // attenuation based on distance^2
+                        // since N random points are sampled, monte carlo
+                        // FOR SOME REASON?? also * the cos between the geometric normal of the light and dir to light
+                        color += (light.color * diff * light_cos)
+                            / (distance_to_light * distance_to_light)
+                            / self.config.num_area_light_tests as f32
+                            * (dir_to_light.dot(light_normal)).abs();
+                    }
                 }
             }
         }

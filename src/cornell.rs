@@ -232,11 +232,11 @@ pub fn cornell_box(store: &mut Scene) -> Result<()> {
         Mesh(bright_red_cube),
     ));
 
-    let ambient = Light {
-        light_type: LightType::Ambient,
-        color: Rgba::rgb(0.07, 0.07, 0.07), // color: LinearRgba::rgb(1.0, 1.0, 1.0)
-    };
-    store.lights.push(ambient);
+    // let ambient = Light {
+    //     light_type: LightType::Ambient,
+    //     color: Rgba::rgb(0.07, 0.07, 0.07), // color: LinearRgba::rgb(1.0, 1.0, 1.0)
+    // };
+    // store.lights.push(ambient);
 
     // let n_points_dim = 3; // must be 1, 3 or 5
     // let n_half: i32 = (n_points_dim - 1) / 2;
