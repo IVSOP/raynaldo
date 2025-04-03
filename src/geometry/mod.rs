@@ -112,4 +112,26 @@ pub struct LightQuad {
     pub bottom_left: Vec3,
     pub u_vec: Vec3, // direction travelled when u varies, multiplied by size of each side. bottom_left + u_vec == bottom_right
     pub v_vec: Vec3,
+    pub normal: Vec3,
+}
+
+impl LightQuad {
+    pub fn new(bottom_left: Vec3, u_vec: Vec3, v_vec: Vec3) -> Self {
+        let normal = (u_vec.cross(v_vec)).normalize();
+        Self {
+            bottom_left,
+            u_vec,
+            v_vec,
+            normal,
+        }
+    }
+
+    pub fn with_normal(bottom_left: Vec3, u_vec: Vec3, v_vec: Vec3, normal: Vec3) -> Self {
+        Self {
+            bottom_left,
+            u_vec,
+            v_vec,
+            normal,
+        }
+    }
 }

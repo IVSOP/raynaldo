@@ -13,10 +13,10 @@
 
 * ( ) testar copiar o tonemapping que nos deram
 
-* ( ) optimization
+* (-) optimization
 ** ( ) do not use recursion
 ** ( ) see if color *= 1.0 / distance^2 is better than color /= distance^2
 ** ( ) precompute area of area lights (or manually input it)
-** ( ) precompute normal of area lights
-** ( ) precompute 1.0 / num_area_lights_tests
+** (x) precompute normal of area lights
+** ( ) precompute 1.0 / num_area_lights_tests?????? barely any time gain but might run into precision errors
 

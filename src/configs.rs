@@ -24,52 +24,59 @@ pub struct RenderConfig {
 }
 
 impl RenderConfig {
-    pub const FASTEST: Self = Self {
-        max_depth: 4,
-        compare_all_lights: false,
-        num_area_light_tests: 1,
-        rays_per_pixel: 10,
-        diffuse_strength: 1.0,
-        ray_transport: RayTransportConfig::MonteCarloSingle,
-    };
+    pub const fn new(
+        max_depth: u32,
+        compare_all_lights: bool,
+        num_area_light_tests: u32,
+        rays_per_pixel: u32,
+        diffuse_strength: f32,
+        ray_transport: RayTransportConfig,
+    ) -> Self {
+        Self {
+            max_depth,
+            compare_all_lights,
+            num_area_light_tests,
+            rays_per_pixel,
+            diffuse_strength,
+            ray_transport,
+        }
+    }
 
-    pub const BALANCED: Self = Self {
-        max_depth: 4,
-        compare_all_lights: false,
-        num_area_light_tests: 4,
-        rays_per_pixel: 50,
-        diffuse_strength: 1.0,
-        ray_transport: RayTransportConfig::MonteCarloScatter(0.2),
-    };
+    pub const fn fastest() -> Self {
+        Self::new(4, false, 1, 10, 1.0, RayTransportConfig::MonteCarloSingle)
+    }
 
-    pub const BALANCED_RANDOM_TRANSPORT: Self = Self {
-        max_depth: 4,
-        compare_all_lights: false,
-        num_area_light_tests: 1,
-        rays_per_pixel: 50,
-        diffuse_strength: 1.0,
-        ray_transport: RayTransportConfig::MonteCarloSingle,
-    };
+    pub const fn balanced() -> Self {
+        Self::new(
+            4,
+            false,
+            4,
+            50,
+            1.0,
+            RayTransportConfig::MonteCarloScatter(0.2),
+        )
+    }
+
+    pub const fn balanced_random_transport() -> Self {
+        Self::new(4, false, 1, 50, 1.0, RayTransportConfig::MonteCarloSingle)
+    }
 
     // uses a lot of monte carlo approaches so rays per pixel etc need to be high
-    pub const SLOWEST_RAND: Self = Self {
-        max_depth: 5,
-        compare_all_lights: false,
-        num_area_light_tests: 50,
-        rays_per_pixel: 100,
-        diffuse_strength: 1.0,
-        ray_transport: RayTransportConfig::MonteCarloScatter(0.5),
-    };
+    pub const fn slowest_rand() -> Self {
+        Self::new(
+            5,
+            false,
+            50,
+            100,
+            1.0,
+            RayTransportConfig::MonteCarloScatter(0.5),
+        )
+    }
 
     // does not use a lot of monte carlo approaches
-    pub const SLOWEST: Self = Self {
-        max_depth: 5,
-        compare_all_lights: true,
-        num_area_light_tests: 4,
-        rays_per_pixel: 20,
-        diffuse_strength: 1.0,
-        ray_transport: RayTransportConfig::LoopScatter(5),
-    };
+    pub const fn slowest() -> Self {
+        Self::new(5, true, 4, 20, 1.0, RayTransportConfig::LoopScatter(5))
+    }
 }
 
 #[derive(Debug)]

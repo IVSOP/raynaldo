@@ -235,8 +235,7 @@ impl<T: RayTracer> Renderer<T> {
                     let scattered_color = self.trace(scatter_ray, n1, depth + 1);
                     let cos_theta = scatter_dir.dot(normal).max(0.0);
 
-                    color +=
-                        scattered_color * diff * diffuse_weight * cos_theta * (1.0 / num as f32);
+                    color += (scattered_color * diff * diffuse_weight * cos_theta) / num as f32;
                 }
             }
         }
@@ -275,7 +274,7 @@ impl<T: RayTracer> Renderer<T> {
                     let scattered_color = self.trace(scatter_ray, n1, depth + 1);
                     let cos_theta = scatter_dir.dot(normal).max(0.0);
 
-                    color += scattered_color * diff * diffuse_weight * cos_theta * (1.0 / prob);
+                    color += (scattered_color * diff * diffuse_weight * cos_theta) / prob;
                 }
             }
         }
@@ -499,9 +498,6 @@ impl<T: RayTracer> Renderer<T> {
                 // we have a direct path to the light, can add direct illumination
                 if distance_to_light > 0.0 {
                     if let None = self.scene.raytracer.intersect(shadow_ray) {
-                        // I don't really like this but I had to match someone else's code
-                        let light_normal = (square.u_vec.cross(square.v_vec)).normalize();
-
                         // color of the light * color of object * cos from the object to the light
                         // attenuation based on distance^2
                         // since N random points are sampled, monte carlo
@@ -509,7 +505,7 @@ impl<T: RayTracer> Renderer<T> {
                         color += (light.color * diff * light_cos)
                             / (distance_to_light * distance_to_light)
                             / self.config.num_area_light_tests as f32
-                            * (dir_to_light.dot(light_normal)).abs();
+                            * (dir_to_light.dot(square.normal)).abs();
                     }
                 }
             }

@@ -55,7 +55,7 @@ fn main() -> anyhow::Result<()> {
         .context("Error building scene")?;
 
     // configs
-    let renderconfig = RenderConfig::SLOWEST;
+    let renderconfig = RenderConfig::slowest();
     let camconfig = CamConfig::BALANCED;
     let number_of_pixels = (camconfig.w * camconfig.h) as usize;
 

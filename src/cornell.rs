@@ -263,6 +263,7 @@ pub fn cornell_box(store: &mut Scene) -> Result<()> {
                 bottom_left: Vec3::new(250.0 + (i * 250) as f32, 545.0, 250.0 + (i * 250) as f32),
                 u_vec: Vec3::X * size,
                 v_vec: Vec3::Z * size,
+                normal: Vec3::NEG_Y,
             }),
         };
         store.lights.push(area_square);
