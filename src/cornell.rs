@@ -258,7 +258,7 @@ pub fn cornell_box(store: &mut Scene) -> Result<()> {
     let size = 50.0;
     for i in -1..2 {
         let area_square = Light {
-            color: Rgba::rgb(1.2, 1.2, 1.2),
+            color: Rgba::rgb(250000.0, 250000.0, 250000.0),
             light_type: LightType::AreaQuad(LightQuad {
                 bottom_left: Vec3::new(250.0 + (i * 250) as f32, 545.0, 250.0 + (i * 250) as f32),
                 u_vec: Vec3::X * size,

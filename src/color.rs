@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Rgba {
@@ -90,6 +90,15 @@ impl MulAssign<f32> for Rgba {
         self.g *= rhs;
         self.b *= rhs;
         self.a *= rhs;
+    }
+}
+
+impl DivAssign<f32> for Rgba {
+    fn div_assign(&mut self, rhs: f32) {
+        self.r /= rhs;
+        self.g /= rhs;
+        self.b /= rhs;
+        self.a /= rhs;
     }
 }
 

@@ -5,13 +5,17 @@
 ** (-) cubemap
 ** ( ) normal map
 
-* ( ) lights
-** ( ) add check for ray directly hitting area light. problem: when checking for a direct path to the light
+* (-) lights
+  ** ( ) decide if lights should have a mesh (store their geomID in a map or something?) or if they should be faked with emissive geometry
+** (x) add attenuation with distance to the lights
 
-* (x) polish
-** (x) rework render config. for example, num_scatter, scatter_probability, use_path_tracing and use_random_scatter cannot be used at the same time
+* ( ) path tracing
+** ( ) bias probabilities when picking transmission method instead of fully random (cdf vs pdf???)
+** ( ) instead of just defining max depth, max depth || probability of continuing. don't forget do divide by probability if a random decision was made
 
-* (x) path tracing
-** (x) allow to randomly select between spec reflect, spec transm, diff reflection (scatter), monte carlo
-** ( ) bias probabilities instead of fully random (cdf vs pdf???)
+* ( ) testar copiar o tonemapping que nos deram
+
+* ( ) optimization
+** ( ) do not use recursion
+** ( ) see if color *= 1.0 / distance^2 is better than color /= distance^2
 

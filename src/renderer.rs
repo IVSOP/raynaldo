@@ -441,7 +441,10 @@ impl<T: RayTracer> Renderer<T> {
 
             // we have a direct path to the light, can add direct illumination
             if let None = self.scene.raytracer.intersect(shadow_ray) {
-                let color = light.color * diffuse * light_cos;
+                let mut color = light.color * diffuse * light_cos;
+                if distance_to_light > 0.0 {
+                    color /= distance_to_light * distance_to_light;
+                }
 
                 return color;
             }
@@ -494,7 +497,13 @@ impl<T: RayTracer> Renderer<T> {
 
                 // we have a direct path to the light, can add direct illumination
                 if let None = self.scene.raytracer.intersect(shadow_ray) {
-                    color += light.color * diff * light_coef;
+                    let mut current_color = light.color * diff * light_coef;
+                    if distance_to_light > 0.0 {
+                        // current_color *= 1.0 / (distance_to_light * distance_to_light);
+                        current_color /= distance_to_light * distance_to_light;
+                    }
+
+                    color += current_color;
                 }
             }
         }

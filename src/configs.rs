@@ -90,6 +90,14 @@ impl CamConfig {
         fov: 60.0_f32.to_radians(),
     };
 
+    pub const BALANCED: Self = Self {
+        w: 1920, // 2560;
+        h: 1080, // 1440;
+        pos: Vec3::new(280.0, 265.0, -500.0),
+        lookat: Vec3::new(280.0, 260.0, 0.0),
+        fov: 60.0_f32.to_radians(),
+    };
+
     pub const SLOW: Self = Self {
         w: 1920, // 2560;
         h: 1080, // 1440;
