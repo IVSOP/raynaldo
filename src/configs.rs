@@ -2,17 +2,25 @@
 
 use glam::Vec3;
 
+// terrible name for both the enum itself and the things inside
+#[derive(Debug)]
+pub enum RayTransportConfig {
+    // ray can EITHER reflect, refract or scatter
+    MonteCarloSingle,
+    // scatter based on probability
+    MonteCarloScatter(f32), // probability, [0, 1]
+    // fixed number of scatters
+    LoopScatter(u32), // number of scatters, > 0
+}
+
 #[derive(Debug)]
 pub struct RenderConfig {
     pub max_depth: u32,
     pub compare_all_lights: bool,
     pub num_area_light_tests: u32,
     pub rays_per_pixel: u32,
-    pub num_scatter: u32,
     pub diffuse_strength: f32,
-    pub scatter_probability: f32,
-    pub use_random_scatter: bool,
-    pub random_light_transport: bool,
+    pub ray_transport: RayTransportConfig,
 }
 
 impl RenderConfig {
@@ -21,11 +29,8 @@ impl RenderConfig {
         compare_all_lights: false,
         num_area_light_tests: 1,
         rays_per_pixel: 10,
-        num_scatter: 1,
         diffuse_strength: 1.0,
-        scatter_probability: 0.0,
-        use_random_scatter: false,
-        random_light_transport: true,
+        ray_transport: RayTransportConfig::MonteCarloSingle,
     };
 
     pub const BALANCED: Self = Self {
@@ -33,11 +38,8 @@ impl RenderConfig {
         compare_all_lights: false,
         num_area_light_tests: 4,
         rays_per_pixel: 50,
-        num_scatter: 0,
         diffuse_strength: 1.0,
-        scatter_probability: 0.2,
-        use_random_scatter: true,
-        random_light_transport: false,
+        ray_transport: RayTransportConfig::MonteCarloScatter(0.2),
     };
 
     pub const BALANCED_RANDOM_TRANSPORT: Self = Self {
@@ -45,11 +47,8 @@ impl RenderConfig {
         compare_all_lights: false,
         num_area_light_tests: 1,
         rays_per_pixel: 50,
-        num_scatter: 0,
         diffuse_strength: 1.0,
-        scatter_probability: 0.5,
-        use_random_scatter: false,
-        random_light_transport: true,
+        ray_transport: RayTransportConfig::MonteCarloSingle,
     };
 
     // uses a lot of monte carlo approaches so rays per pixel etc need to be high
@@ -58,11 +57,8 @@ impl RenderConfig {
         compare_all_lights: false,
         num_area_light_tests: 50,
         rays_per_pixel: 100,
-        num_scatter: 0,
         diffuse_strength: 1.0,
-        scatter_probability: 0.5,
-        use_random_scatter: true,
-        random_light_transport: false,
+        ray_transport: RayTransportConfig::MonteCarloScatter(0.5),
     };
 
     // does not use a lot of monte carlo approaches
@@ -71,11 +67,8 @@ impl RenderConfig {
         compare_all_lights: true,
         num_area_light_tests: 4,
         rays_per_pixel: 20,
-        num_scatter: 5,
         diffuse_strength: 1.0,
-        scatter_probability: 0.0,
-        use_random_scatter: false,
-        random_light_transport: false,
+        ray_transport: RayTransportConfig::LoopScatter(5),
     };
 }
 

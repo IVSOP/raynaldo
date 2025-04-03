@@ -1,7 +1,7 @@
 use crate::camera::Camera;
 use crate::color::Rgba;
 use crate::common::compute_reflection_coeff;
-use crate::configs::RenderConfig;
+use crate::configs::{RayTransportConfig, RenderConfig};
 use crate::geometry::{BuiltScene, Geometry, Light, LightQuad, LightType, Material};
 use crate::raytracer::{Ray, RayTracer};
 use glam::Vec3;
@@ -81,14 +81,17 @@ impl<T: RayTracer> Renderer<T> {
             color += self.direct_lighting(hit_pos, normal, &material, diff);
 
             // diffuse and specular
-            if self.config.random_light_transport {
-                color += self.random_reflect_refract_scatter(
-                    hit_pos, ray_dir, normal, diff, refraction, material, depth,
-                );
-            } else {
-                color += self.reflect_refract_scatter(
-                    hit_pos, ray_dir, normal, diff, refraction, material, depth,
-                );
+            match self.config.ray_transport {
+                RayTransportConfig::MonteCarloSingle => {
+                    color += self.random_reflect_refract_scatter(
+                        hit_pos, ray_dir, normal, diff, refraction, material, depth,
+                    );
+                }
+                _ => {
+                    color += self.reflect_refract_scatter(
+                        hit_pos, ray_dir, normal, diff, refraction, material, depth,
+                    );
+                }
             }
 
             // emissive
@@ -215,6 +218,7 @@ impl<T: RayTracer> Renderer<T> {
         n1: f32,
         refract: f32,
         diff: Rgba,
+        num: u32,
     ) -> Rgba {
         let mut color = Rgba::BLACK;
 
@@ -223,7 +227,7 @@ impl<T: RayTracer> Renderer<T> {
             let diffuse_weight = refract * self.config.diffuse_strength;
 
             if diffuse_weight > 0.0 {
-                for _ in 0..self.config.num_scatter {
+                for _ in 0..num {
                     let scatter_dir = sample_cos_hemisphere(normal);
                     let offset = EPSILON * normal;
                     let origin = hit + offset;
@@ -231,11 +235,8 @@ impl<T: RayTracer> Renderer<T> {
                     let scattered_color = self.trace(scatter_ray, n1, depth + 1);
                     let cos_theta = scatter_dir.dot(normal).max(0.0);
 
-                    color += scattered_color
-                        * diff
-                        * diffuse_weight
-                        * cos_theta
-                        * (1.0 / self.config.num_scatter as f32);
+                    color +=
+                        scattered_color * diff * diffuse_weight * cos_theta * (1.0 / num as f32);
                 }
             }
         }
@@ -254,6 +255,7 @@ impl<T: RayTracer> Renderer<T> {
         n1: f32,
         refract: f32,
         diff: Rgba,
+        prob: f32,
     ) -> Rgba {
         let mut color = Rgba::BLACK;
 
@@ -261,7 +263,7 @@ impl<T: RayTracer> Renderer<T> {
 
         if material.transparency <= 0.0 {
             // randomly choose if we scatter
-            if fastrand::f32() <= self.config.scatter_probability {
+            if fastrand::f32() <= prob {
                 // takes what's left after reflection
                 let diffuse_weight = refract * self.config.diffuse_strength;
 
@@ -273,11 +275,7 @@ impl<T: RayTracer> Renderer<T> {
                     let scattered_color = self.trace(scatter_ray, n1, depth + 1);
                     let cos_theta = scatter_dir.dot(normal).max(0.0);
 
-                    color += scattered_color
-                        * diff
-                        * diffuse_weight
-                        * cos_theta
-                        * (1.0 / self.config.scatter_probability);
+                    color += scattered_color * diff * diffuse_weight * cos_theta * (1.0 / prob);
                 }
             }
         }
@@ -324,10 +322,14 @@ impl<T: RayTracer> Renderer<T> {
 
         // scattering
         // uses what's left after reflection (like refraction), but assumes the material does not refract
-        if self.config.use_random_scatter {
-            color += self.scatter_rand(hit, normal, material, depth, n1, refract, diff);
-        } else {
-            color += self.loop_scatter(hit, normal, material, depth, n1, refract, diff);
+        match self.config.ray_transport {
+            RayTransportConfig::MonteCarloScatter(prob) => {
+                color += self.scatter_rand(hit, normal, material, depth, n1, refract, diff, prob);
+            }
+            RayTransportConfig::LoopScatter(num) => {
+                color += self.loop_scatter(hit, normal, material, depth, n1, refract, diff, num);
+            }
+            _ => (),
         }
 
         color
@@ -379,7 +381,7 @@ impl<T: RayTracer> Renderer<T> {
             // scattering
             // uses what's left after reflection (like refraction), but assumes the material does not refract
             // no loop scattering for now
-            self.scatter_rand(hit, normal, material, depth, n1, refract, diff)
+            self.loop_scatter(hit, normal, material, depth, n1, refract, diff, 1)
         }
     }
 
