@@ -12,6 +12,7 @@ pub struct RenderConfig {
     pub diffuse_strength: f32,
     pub scatter_probability: f32,
     pub use_random_scatter: bool,
+    pub random_light_transport: bool,
 }
 
 impl RenderConfig {
@@ -24,6 +25,7 @@ impl RenderConfig {
         diffuse_strength: 1.0,
         scatter_probability: 0.0,
         use_random_scatter: false,
+        random_light_transport: true,
     };
 
     pub const BALANCED: Self = Self {
@@ -35,18 +37,32 @@ impl RenderConfig {
         diffuse_strength: 1.0,
         scatter_probability: 0.2,
         use_random_scatter: true,
+        random_light_transport: false,
+    };
+
+    pub const BALANCED_RANDOM_TRANSPORT: Self = Self {
+        max_depth: 4,
+        compare_all_lights: false,
+        num_area_light_tests: 1,
+        rays_per_pixel: 50,
+        num_scatter: 0,
+        diffuse_strength: 1.0,
+        scatter_probability: 0.5,
+        use_random_scatter: false,
+        random_light_transport: true,
     };
 
     // uses a lot of monte carlo approaches so rays per pixel etc need to be high
     pub const SLOWEST_RAND: Self = Self {
         max_depth: 5,
         compare_all_lights: false,
-        num_area_light_tests: 10,
+        num_area_light_tests: 50,
         rays_per_pixel: 100,
         num_scatter: 0,
         diffuse_strength: 1.0,
         scatter_probability: 0.5,
         use_random_scatter: true,
+        random_light_transport: false,
     };
 
     // does not use a lot of monte carlo approaches
@@ -59,6 +75,7 @@ impl RenderConfig {
         diffuse_strength: 1.0,
         scatter_probability: 0.0,
         use_random_scatter: false,
+        random_light_transport: false,
     };
 }
 

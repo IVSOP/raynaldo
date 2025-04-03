@@ -77,11 +77,21 @@ impl<T: RayTracer> Renderer<T> {
 
             let (diff, emissive) = self.scene.sample_color(geometry, triangle_id, u, v);
 
+            // lighting
             color += self.direct_lighting(hit_pos, normal, &material, diff);
-            color += self.reflect_refract_scatter(
-                hit_pos, ray_dir, normal, diff, refraction, material, depth,
-            );
 
+            // diffuse and specular
+            if self.config.random_light_transport {
+                color += self.random_reflect_refract_scatter(
+                    hit_pos, ray_dir, normal, diff, refraction, material, depth,
+                );
+            } else {
+                color += self.reflect_refract_scatter(
+                    hit_pos, ray_dir, normal, diff, refraction, material, depth,
+                );
+            }
+
+            // emissive
             color += emissive;
 
             color
@@ -321,6 +331,56 @@ impl<T: RayTracer> Renderer<T> {
         }
 
         color
+    }
+
+    // light can reflect, refract or scatter, but only one at a time
+    pub fn random_reflect_refract_scatter(
+        &self,
+        hit: Vec3,
+        incident_dir: Vec3,
+        normal: Vec3,
+        diff: Rgba,
+        ray_eta: f32,
+        material: &Material,
+        depth: u32,
+    ) -> Rgba {
+        // n1 is refraction being left
+        // n2 is refraction being entered
+
+        let n1: f32;
+        let n2: f32;
+
+        // WARNING nao tenho como saber se o raio esta a sair ou entrar no material,
+        // nem qual o indice de refracao que devo usar ao sair, entao tive de fazer esta manhosice
+        if ray_eta == AIR_REFRACT {
+            // raytracer is coming from outside, entering
+            n1 = AIR_REFRACT;
+            n2 = material.refraction;
+        } else {
+            // raytracer is leaving
+            n1 = material.refraction;
+            n2 = AIR_REFRACT;
+        }
+
+        let reflect = compute_reflection_coeff(incident_dir, normal, n1, n2, material.reflectivity);
+        let refract = 1.0 - reflect;
+
+        let rand = fastrand::f32();
+        const NUM_CHOICES: f32 = 3.0;
+
+        if rand < 1.0 / NUM_CHOICES {
+            // reflection, for materials with reflectivity
+            self.reflect(hit, incident_dir, normal, material, depth, n1, reflect) * NUM_CHOICES
+        } else if rand < 2.0 / NUM_CHOICES {
+            // refraction, for materials with transparency
+            self.refract(hit, incident_dir, normal, material, depth, n1, n2, refract) * NUM_CHOICES
+        } else {
+            // scatter
+            // scattering
+            // uses what's left after reflection (like refraction), but assumes the material does not refract
+            // no loop scattering for now
+            self.scatter_rand(hit, normal, material, depth, n1, refract, diff)
+        }
     }
 
     fn handle_light(

@@ -1,0 +1,16 @@
+* (-) texture mapping
+** (x) diffuse
+** (x) emissive
+** ( ) heightmap
+** (-) cubemap
+** ( ) normal map
+
+* ( ) lights
+** ( ) add check for ray directly hitting area light. problem: when checking for a direct path to the light
+
+* ( ) polish
+** ( ) rework render config. for example, num_scatter, scatter_probability, use_path_tracing and use_random_scatter cannot be used at the same time
+
+* (x) path tracing
+** (x) allow to randomly select between spec reflect, spec transm, diff reflection (scatter), monte carlo
+
