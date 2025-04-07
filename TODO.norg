@@ -7,9 +7,9 @@
   ** ( ) decide if lights should have a mesh (store their geomID in a map or something?) or if they should be faked with emissive geometry
 ** ( ) in area lights, pdf = 1.0 / area, return color as power * pdf and, in handle_square_light, do color * area???????
 
-* ( ) path tracing
+* (-) path tracing
 ** ( ) bias probabilities when picking transmission method instead of fully random (cdf vs pdf???)
-** ( ) instead of just defining max depth, max depth || probability of continuing. don't forget do divide by probability if a random decision was made
+** (x) instead of just defining max depth, max depth || probability of continuing. don't forget do divide by probability if a random decision was made
 
 * ( ) testar copiar o tonemapping que nos deram
 

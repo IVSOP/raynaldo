@@ -54,53 +54,54 @@ impl<T: RayTracer> Renderer<T> {
         result.into()
     }
 
+    // TODO: repeated ifs, last division could be a multitplication
     fn trace(&self, ray: Ray, refraction: f32, depth: u32) -> Rgba {
-        if depth > self.config.max_depth {
-            // TODO: save this somewhere
-            return Rgba::BLACK;
-        }
+        let mut color = Rgba::BLACK;
+        let rand = fastrand::f32();
+        if depth < self.config.min_depth || rand < self.config.over_depth_prob {
+            if let Some(hit) = self.scene.raytracer.intersect(ray) {
+                let geometry: &Geometry = self
+                    .scene
+                    .get_geometry(hit.geometry_id)
+                    .expect("Error getting geometry");
+                let material = &geometry.material;
 
-        if let Some(hit) = self.scene.raytracer.intersect(ray) {
-            let mut color = Rgba::BLACK;
-            let geometry: &Geometry = self
-                .scene
-                .get_geometry(hit.geometry_id)
-                .expect("Error getting geometry");
-            let material = &geometry.material;
+                let ray_dir = ray.direction;
+                let normal = hit.normal;
+                let hit_pos = hit.hit_point;
+                let u = hit.u;
+                let v = hit.v;
+                let triangle_id = hit.triangle_id;
 
-            let ray_dir = ray.direction;
-            let normal = hit.normal;
-            let hit_pos = hit.hit_point;
-            let u = hit.u;
-            let v = hit.v;
-            let triangle_id = hit.triangle_id;
+                let (diff, emissive) = self.scene.sample_color(geometry, triangle_id, u, v);
 
-            let (diff, emissive) = self.scene.sample_color(geometry, triangle_id, u, v);
+                // lighting
+                color += self.direct_lighting(hit_pos, normal, &material, diff);
 
-            // lighting
-            color += self.direct_lighting(hit_pos, normal, &material, diff);
-
-            // diffuse and specular
-            match self.config.ray_transport {
-                RayTransportConfig::MonteCarloSingle => {
-                    color += self.random_reflect_refract_scatter(
-                        hit_pos, ray_dir, normal, diff, refraction, material, depth,
-                    );
+                // diffuse and specular
+                match self.config.ray_transport {
+                    RayTransportConfig::MonteCarloSingle => {
+                        color += self.random_reflect_refract_scatter(
+                            hit_pos, ray_dir, normal, diff, refraction, material, depth,
+                        );
+                    }
+                    _ => {
+                        color += self.reflect_refract_scatter(
+                            hit_pos, ray_dir, normal, diff, refraction, material, depth,
+                        );
+                    }
                 }
-                _ => {
-                    color += self.reflect_refract_scatter(
-                        hit_pos, ray_dir, normal, diff, refraction, material, depth,
-                    );
-                }
+
+                // emissive
+                color += emissive;
             }
-
-            // emissive
-            color += emissive;
-
-            color
-        } else {
-            Rgba::BLACK
         }
+
+        if !(depth < self.config.min_depth) {
+            color /= self.config.over_depth_prob;
+        }
+
+        color
     }
 
     pub fn direct_lighting(

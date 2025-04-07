@@ -15,7 +15,9 @@ pub enum RayTransportConfig {
 
 #[derive(Debug)]
 pub struct RenderConfig {
-    pub max_depth: u32,
+    pub min_depth: u32,
+    /// inverse of the probability of still going deeper when if depth >= min_depth
+    pub over_depth_prob: f32,
     pub compare_all_lights: bool,
     pub num_area_light_tests: u32,
     pub rays_per_pixel: u32,
@@ -25,15 +27,20 @@ pub struct RenderConfig {
 
 impl RenderConfig {
     pub const fn new(
-        max_depth: u32,
+        min_depth: u32,
+        over_depth_prob: f32,
         compare_all_lights: bool,
         num_area_light_tests: u32,
         rays_per_pixel: u32,
         diffuse_strength: f32,
         ray_transport: RayTransportConfig,
     ) -> Self {
+        if over_depth_prob == 0.0 {
+            panic!("Acho que dividir por 0 nao vai correr muito bem");
+        }
         Self {
-            max_depth,
+            min_depth,
+            over_depth_prob,
             compare_all_lights,
             num_area_light_tests,
             rays_per_pixel,
@@ -43,12 +50,21 @@ impl RenderConfig {
     }
 
     pub const fn fastest() -> Self {
-        Self::new(4, false, 1, 10, 1.0, RayTransportConfig::MonteCarloSingle)
+        Self::new(
+            4,
+            0.1,
+            false,
+            1,
+            10,
+            1.0,
+            RayTransportConfig::MonteCarloSingle,
+        )
     }
 
     pub const fn balanced() -> Self {
         Self::new(
             4,
+            0.5,
             false,
             4,
             50,
@@ -58,13 +74,22 @@ impl RenderConfig {
     }
 
     pub const fn balanced_random_transport() -> Self {
-        Self::new(4, false, 1, 50, 1.0, RayTransportConfig::MonteCarloSingle)
+        Self::new(
+            4,
+            0.5,
+            false,
+            1,
+            50,
+            1.0,
+            RayTransportConfig::MonteCarloSingle,
+        )
     }
 
     // uses a lot of monte carlo approaches so rays per pixel etc need to be high
     pub const fn slowest_rand() -> Self {
         Self::new(
             5,
+            0.8,
             false,
             50,
             100,
@@ -75,7 +100,7 @@ impl RenderConfig {
 
     // does not use a lot of monte carlo approaches
     pub const fn slowest() -> Self {
-        Self::new(5, true, 4, 20, 1.0, RayTransportConfig::LoopScatter(5))
+        Self::new(5, 0.8, true, 4, 20, 1.0, RayTransportConfig::LoopScatter(5))
     }
 }
 
